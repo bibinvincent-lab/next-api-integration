@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import EditIcon from "@mui/icons-material/Edit";
 import {
   Box,
   Container,
@@ -15,6 +16,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState([]);
@@ -42,7 +44,35 @@ export default function CertificatesPage() {
       setLoading(false);
     }
   }
+async function deleteCertificate(id) {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this certificate?"
+  );
 
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(
+      `/api/certificates/${id}/delete`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to delete certificate");
+    }
+
+    setCertificates((prev) =>
+      prev.filter((item) => item.id !== id)
+    );
+
+    alert("Certificate deleted successfully");
+  } catch (error) {
+    console.error(error);
+    alert("Delete failed");
+  }
+}
   const filteredRows = certificates.filter((item) =>
     `${item.name} ${item.course}`
       .toLowerCase()
@@ -103,22 +133,53 @@ export default function CertificatesPage() {
           : "-",
     },
     {
-      field: "actions",
-      headerName: "Actions",
-      width: 140,
-      sortable: false,
-      renderCell: (params) => (
-        <Button
+  field: "actions",
+  headerName: "Actions",
+  width: 380,
+  sortable: false,
+  renderCell: (params) => (
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        mt: 0.5,
+      }}
+    >
+      <Button
+        component={Link}
+        href={`/certificates/${params.row.id}`}
+        size="small"
+        variant="outlined"
+        startIcon={<VisibilityIcon />}
+      >
+        View
+      </Button>
+
+<Button
   component={Link}
-  href={`/certificates/${params.row.id}`}
+  href={`/certificates/edit/${params.row.id}`}
   size="small"
-  variant="outlined"
-  startIcon={<VisibilityIcon />}
+  color="warning"
+  variant="contained"
+  startIcon={<EditIcon />}
 >
-  View
+  Edit
 </Button>
-      ),
-    },
+
+      <Button
+        size="small"
+        color="error"
+        variant="contained"
+        startIcon={<DeleteIcon />}
+        onClick={() =>
+          deleteCertificate(params.row.id)
+        }
+      >
+        Delete
+      </Button>
+    </Box>
+  ),
+},
   ];
 
   return (
@@ -134,12 +195,14 @@ export default function CertificatesPage() {
           Certificates
         </Typography>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-        >
-          Create Certificate
-        </Button>
+<Button
+  component={Link}
+  href="/certificates/create-certificate"
+  variant="contained"
+  startIcon={<AddIcon />}
+>
+  Create Certificate
+</Button>
       </Box>
 
       <Card>
