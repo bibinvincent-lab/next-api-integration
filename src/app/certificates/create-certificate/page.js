@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
   ThemeProvider,
@@ -249,6 +249,8 @@ const steps = [
 ];
 
 export default function Home() {
+
+  const router = useRouter();
   const [formState, setFormState] = useState(DEFAULT_STATE);
   const [certificates, setCertificates] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -256,14 +258,16 @@ export default function Home() {
   const [activeStep, setActiveStep] = useState(0);
   const [showJsonView, setShowJsonView] = useState(false);
   const [apiResponse, setApiResponse] = useState(null);
-  
+  const [skillInput, setSkillInput] = useState("");
   // List details
   const [moduleInput, setModuleInput] = useState({ id: "", name: "", score: "", max_score: "", passed: true, completed_at: "" });
   const [achievementInput, setAchievementInput] = useState({ id: "", title: "", description: "", badge_url: "" });
   const [documentInput, setDocumentInput] = useState({ id: "", name: "", type: "", size: "", url: "" });
-
+const [createdCertificate, setCreatedCertificate] = useState(null);
   // Notifications
   const [notification, setNotification] = useState({ open: false, message: "", severity: "success" });
+const [categoryInput, setCategoryInput] = useState("");
+const [tagInput, setTagInput] = useState("");
 
   useEffect(() => {
     fetchCertificates();
@@ -285,7 +289,33 @@ export default function Home() {
       setLoadingList(false);
     }
   };
+const addItemToArray = (field, value, setter) => {
+  if (!value.trim()) {
+    showNotification(`${field} cannot be empty`, "warning");
+    return;
+  }
 
+  setFormState((prev) => {
+    if (prev[field].includes(value.trim())) {
+      showNotification(`${value} already exists`, "warning");
+      return prev;
+    }
+
+    return {
+      ...prev,
+      [field]: [...prev[field], value.trim()],
+    };
+  });
+
+  setter("");
+};
+
+const removeItemFromArray = (field, index) => {
+  setFormState((prev) => ({
+    ...prev,
+    [field]: prev[field].filter((_, i) => i !== index),
+  }));
+};
   const showNotification = (message, severity = "success") => {
     setNotification({ open: true, message, severity });
   };
@@ -347,7 +377,31 @@ export default function Home() {
       [type]: prev[type].filter((_, i) => i !== index)
     }));
   };
+const addSkill = () => {
+  if (!skillInput.trim()) {
+    showNotification("Skill is required", "warning");
+    return;
+  }
 
+  if (formState.skills.includes(skillInput.trim())) {
+    showNotification("Skill already added", "warning");
+    return;
+  }
+
+  setFormState((prev) => ({
+    ...prev,
+    skills: [...prev.skills, skillInput.trim()],
+  }));
+
+  setSkillInput("");
+};
+
+const removeSkill = (index) => {
+  setFormState((prev) => ({
+    ...prev,
+    skills: prev.skills.filter((_, i) => i !== index),
+  }));
+};
   // Lists
   const addModule = () => {
     if (!moduleInput.name) {
@@ -449,9 +503,13 @@ export default function Home() {
     }
   };
 
-  const handleBack = () => {
+const handleBack = () => {
+  if (activeStep === 0) {
+    router.push("/certificates");
+  } else {
     setActiveStep((prev) => prev - 1);
-  };
+  }
+};
 
   const getCompiledJson = () => {
     const currentIsoDate = new Date().toISOString();
@@ -639,9 +697,18 @@ export default function Home() {
       });
 
       if (res.ok) {
-        showNotification("Certificate created successfully!");
-        fetchCertificates();
-      } else {
+  setCreatedCertificate(data);
+
+ showNotification(
+  `Certificate #${data.id} (id) created successfully for ${data.student?.name || data.name}`,
+  "success"
+);
+
+  setFormState(DEFAULT_STATE);
+  setActiveStep(0);
+
+  fetchCertificates();
+} else {
         showNotification(data.error || "Failed to create certificate", "error");
       }
     } catch (err) {
@@ -661,7 +728,7 @@ export default function Home() {
             <Box>
               <Typography variant="h4" sx={{ color: "primary.main", display: "flex", alignItems: "center", gap: 1.5 }}>
                 <SchoolIcon fontSize="large" />
-                Certificate Registry Admin
+                Certificate Registry
               </Typography>
             </Box>
             <Box sx={{ display: "flex", gap: 1.5 }}>
@@ -684,6 +751,7 @@ export default function Home() {
                   sx={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}
                 />
                 <CardContent sx={{ minHeight: "450px", pt: 4 }}>
+               
                   <Stepper activeStep={activeStep} alternativeLabel>
                     {steps.map((label) => (
                       <Step key={label}>
@@ -748,7 +816,7 @@ export default function Home() {
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <TextField label="City" fullWidth value={formState.student.city} onChange={(e) => handleNestedChange("student", "city", e.target.value)} />
                       </Grid>
-                      <Grid size={12}>
+                      {/* <Grid size={12}>
                         <Autocomplete
                           multiple
                           freeSolo
@@ -764,7 +832,41 @@ export default function Home() {
                             <TextField {...params} label="Student Interests" placeholder="Type and press enter" />
                           )}
                         />
-                      </Grid>
+                      </Grid> */}
+                      <Grid container spacing={2}>
+  <Grid size={{ xs: 12, sm: 8 }}>
+    <TextField
+      label="Skill"
+      fullWidth
+      value={skillInput}
+      onChange={(e) => setSkillInput(e.target.value)}
+    />
+  </Grid>
+
+  <Grid size={{ xs: 12, sm: 4 }}>
+    <Button
+      variant="outlined"
+      fullWidth
+      startIcon={<AddIcon />}
+      onClick={addSkill}
+    >
+      Add Skill
+    </Button>
+  </Grid>
+
+  <Grid size={12}>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      {formState.skills.map((skill, index) => (
+        <Chip
+          key={index}
+          label={skill}
+          color="success"
+          onDelete={() => removeSkill(index)}
+        />
+      ))}
+    </Box>
+  </Grid>
+</Grid>
                     </Grid>
                   )}
 
@@ -836,7 +938,7 @@ export default function Home() {
                   {activeStep === 3 && (
                     <Grid container spacing={3}>
                        <Grid size={12}><Typography variant="h6" color="secondary">Classification</Typography></Grid>
-                       <Grid size={12}>
+                       {/* <Grid size={12}>
                         <Autocomplete
                           multiple
                           freeSolo
@@ -850,8 +952,50 @@ export default function Home() {
                           }
                           renderInput={(params) => <TextField {...params} label="Categories" placeholder="e.g. Software Engineering" />}
                         />
-                      </Grid>
+                      </Grid> */}
                       <Grid size={12}>
+  <Card variant="outlined" sx={{ p: 2 }}>
+    <Typography variant="subtitle2" gutterBottom>
+      Categories
+    </Typography>
+
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <TextField
+          fullWidth
+          label="Category"
+          value={categoryInput}
+          onChange={(e) => setCategoryInput(e.target.value)}
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12, sm: 3 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() =>
+            addItemToArray("categories", categoryInput, setCategoryInput)
+          }
+        >
+          Add
+        </Button>
+      </Grid>
+    </Grid>
+
+    <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+      {formState.categories.map((item, idx) => (
+        <Chip
+          key={idx}
+          label={item}
+          color="secondary"
+          onDelete={() => removeItemFromArray("categories", idx)}
+        />
+      ))}
+    </Box>
+  </Card>
+</Grid>
+                      {/* <Grid size={12}>
                         <Autocomplete
                           multiple
                           freeSolo
@@ -865,8 +1009,51 @@ export default function Home() {
                           }
                           renderInput={(params) => <TextField {...params} label="Skills Acquired" placeholder="e.g. Next.js, React" />}
                         />
-                      </Grid>
+                      </Grid> */}
+
                       <Grid size={12}>
+  <Card variant="outlined" sx={{ p: 2 }}>
+    <Typography variant="subtitle2" gutterBottom>
+      Skills
+    </Typography>
+
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <TextField
+          fullWidth
+          label="Skill"
+          value={skillInput}
+          onChange={(e) => setSkillInput(e.target.value)}
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12, sm: 3 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() =>
+            addItemToArray("skills", skillInput, setSkillInput)
+          }
+        >
+          Add
+        </Button>
+      </Grid>
+    </Grid>
+
+    <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+      {formState.skills.map((item, idx) => (
+        <Chip
+          key={idx}
+          label={item}
+          color="success"
+          onDelete={() => removeItemFromArray("skills", idx)}
+        />
+      ))}
+    </Box>
+  </Card>
+</Grid>
+                      {/* <Grid size={12}>
                         <Autocomplete
                           multiple
                           freeSolo
@@ -880,7 +1067,50 @@ export default function Home() {
                           }
                           renderInput={(params) => <TextField {...params} label="Tags" placeholder="e.g. frontend, webdev" />}
                         />
-                      </Grid>
+                      </Grid> */}
+
+                      <Grid size={12}>
+  <Card variant="outlined" sx={{ p: 2 }}>
+    <Typography variant="subtitle2" gutterBottom>
+      Tags
+    </Typography>
+
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <TextField
+          fullWidth
+          label="Tag"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12, sm: 3 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() =>
+            addItemToArray("tags", tagInput, setTagInput)
+          }
+        >
+          Add
+        </Button>
+      </Grid>
+    </Grid>
+
+    <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+      {formState.tags.map((item, idx) => (
+        <Chip
+          key={idx}
+          label={item}
+          color="primary"
+          onDelete={() => removeItemFromArray("tags", idx)}
+        />
+      ))}
+    </Box>
+  </Card>
+</Grid>
 
                       <Grid size={12}><Divider sx={{ my: 1 }}><Chip label="Achievements" size="small" /></Divider></Grid>
                       <Grid size={12}>
@@ -991,16 +1221,215 @@ export default function Home() {
                         System fields (URLs, IDs, Status calculations) will be automatically generated.
                       </Typography>
                       
-                      <Card variant="outlined" sx={{ mb: 4, textAlign: 'left', p: 3, bgcolor: 'background.default' }}>
-                        <Grid container spacing={2}>
-                          <Grid size={6}><Typography variant="subtitle2" color="text.secondary">Name:</Typography><Typography variant="body1">{formState.name}</Typography></Grid>
-                          <Grid size={6}><Typography variant="subtitle2" color="text.secondary">Course:</Typography><Typography variant="body1">{formState.course}</Typography></Grid>
-                          <Grid size={6}><Typography variant="subtitle2" color="text.secondary">Student Email:</Typography><Typography variant="body1">{formState.student.email}</Typography></Grid>
-                          <Grid size={6}><Typography variant="subtitle2" color="text.secondary">Issue Date:</Typography><Typography variant="body1">{formState.issue_date}</Typography></Grid>
-                          <Grid size={6}><Typography variant="subtitle2" color="text.secondary">Status:</Typography><Typography variant="body1">{formState.status}</Typography></Grid>
-                        </Grid>
-                      </Card>
+                      <Card
+  variant="outlined"
+  sx={{
+    mb: 4,
+    p: 3,
+    textAlign: "left",
+    bgcolor: "background.default",
+  }}
+>
+  <Typography variant="h6" gutterBottom>
+    Certificate Information
+  </Typography>
 
+  <Grid container spacing={2}>
+    <Grid size={6}>
+      <Typography color="text.secondary">Certificate Name</Typography>
+      <Typography>{formState.name}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Course</Typography>
+      <Typography>{formState.course}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Status</Typography>
+      <Typography>{formState.status}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Grade</Typography>
+      <Typography>{formState.grade || "-"}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Score</Typography>
+      <Typography>{formState.score || "-"}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Rank</Typography>
+      <Typography>{formState.rank || "-"}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Issue Date</Typography>
+      <Typography>{formState.issue_date}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Expiry Date</Typography>
+      <Typography>{formState.expiry_date || "No Expiry"}</Typography>
+    </Grid>
+  </Grid>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Student Information
+  </Typography>
+
+  <Grid container spacing={2}>
+    <Grid size={6}>
+      <Typography color="text.secondary">Name</Typography>
+      <Typography>{formState.student.name}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Email</Typography>
+      <Typography>{formState.student.email}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Phone</Typography>
+      <Typography>{formState.student.phone || "-"}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">Country</Typography>
+      <Typography>{formState.student.country || "-"}</Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography color="text.secondary">City</Typography>
+      <Typography>{formState.student.city || "-"}</Typography>
+    </Grid>
+  </Grid>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Categories
+  </Typography>
+
+  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+    {formState.categories.map((item, idx) => (
+      <Chip key={idx} label={item} color="secondary" />
+    ))}
+  </Box>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Skills
+  </Typography>
+
+  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+    {formState.skills.map((item, idx) => (
+      <Chip key={idx} label={item} color="success" />
+    ))}
+  </Box>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Tags
+  </Typography>
+
+  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+    {formState.tags.map((item, idx) => (
+      <Chip key={idx} label={item} color="primary" />
+    ))}
+  </Box>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Modules
+  </Typography>
+
+  <List dense>
+    {formState.modules.map((module, idx) => (
+      <ListItem key={idx}>
+        <ListItemText
+          primary={module.name}
+          secondary={`Score: ${module.score}/${module.max_score} | Passed: ${
+            module.passed ? "Yes" : "No"
+          }`}
+        />
+      </ListItem>
+    ))}
+  </List>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Achievements
+  </Typography>
+
+  <List dense>
+    {formState.achievements.map((achievement, idx) => (
+      <ListItem key={idx}>
+        <ListItemText
+          primary={achievement.title}
+          secondary={achievement.description}
+        />
+      </ListItem>
+    ))}
+  </List>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Documents
+  </Typography>
+
+  <List dense>
+    {formState.documents.map((doc, idx) => (
+      <ListItem key={idx}>
+        <ListItemText
+          primary={doc.name}
+          secondary={`${doc.type} - ${doc.url}`}
+        />
+      </ListItem>
+    ))}
+  </List>
+
+  <Divider sx={{ my: 3 }} />
+
+  <Typography variant="h6" gutterBottom>
+    Settings
+  </Typography>
+
+  <Grid container spacing={2}>
+    <Grid size={6}>
+      <Typography>
+        Show Score: {formState.settings.show_score ? "Yes" : "No"}
+      </Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography>
+        Show Rank: {formState.settings.show_rank ? "Yes" : "No"}
+      </Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography>
+        Downloadable: {formState.settings.downloadable ? "Yes" : "No"}
+      </Typography>
+    </Grid>
+
+    <Grid size={6}>
+      <Typography>
+        Public Profile: {formState.settings.public_profile ? "Yes" : "No"}
+      </Typography>
+    </Grid>
+  </Grid>
+</Card>
                       <Button
                         variant="contained"
                         color="primary"
@@ -1017,9 +1446,9 @@ export default function Home() {
 
                   {/* Navigation Buttons */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Button disabled={activeStep === 0} onClick={handleBack} variant="outlined">
-                      Back
-                    </Button>
+                    <Button onClick={handleBack} variant="outlined">
+  Back
+</Button>
                     {activeStep < steps.length - 1 && (
                       <Button variant="contained" onClick={handleNext}>
                         Next Step
@@ -1032,7 +1461,7 @@ export default function Home() {
             </Grid>
 
             {/* Right Column: Code viewer & Live Response */}
-            <Grid size={{ xs: 12, lg: 4 }}>
+            {/* <Grid size={{ xs: 12, lg: 4 }}>
               <Grid container spacing={3}>
                 <Grid size={12}>
                   <Card>
@@ -1123,21 +1552,42 @@ export default function Home() {
                   </Card>
                 </Grid>
               </Grid>
-            </Grid>
+            </Grid> */}
           </Grid>
         </Container>
       </Box>
 
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
-        onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert onClose={() => setNotification({ ...notification, open: false })} severity={notification.severity} sx={{ width: '100%' }}>
-          {notification.message}
-        </Alert>
-      </Snackbar>
+
+
+<Snackbar
+  open={notification.open}
+  autoHideDuration={6000}
+  onClose={() =>
+    setNotification((prev) => ({ ...prev, open: false }))
+  }
+  anchorOrigin={{ vertical: "top", horizontal: "center" }}
+>
+  <Alert
+    severity={notification.severity}
+    variant="filled"
+    sx={{
+      width: "100%",
+      minWidth: 500,
+      fontSize: "1rem",
+      "& .MuiAlert-message": {
+        fontSize: "1rem",
+        fontWeight: 600,
+      },
+      "& .MuiAlert-icon": {
+        fontSize: "2rem",
+      },
+      py: 1.5,
+    }}
+  >
+    {notification.message}
+  </Alert>
+</Snackbar>
+
     </ThemeProvider>
   );
 }

@@ -50,34 +50,39 @@ export default function EditCertificatePage() {
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+async function handleSubmit(e) {
+  e.preventDefault();
 
-    try {
-      const res = await fetch(
-        `/api/certificates/${id}/update`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+  console.log("Submitting:", formData);
 
-      if (!res.ok) {
-        throw new Error("Update failed");
+  try {
+    const res = await fetch(
+      `/api/certificates/${id}/update`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       }
+    );
 
-      alert("Updated successfully");
+    const responseText = await res.text();
 
-      router.push("/certificates");
-    } catch (error) {
-      console.error(error);
-      alert("Update failed");
+    console.log("Status:", res.status);
+    console.log("Response:", responseText);
+
+    if (!res.ok) {
+      throw new Error(responseText);
     }
+
+    alert("Updated successfully");
+    router.push("/certificates");
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
   }
+}
 
   if (loading) {
     return <CircularProgress />;
@@ -157,18 +162,19 @@ export default function EditCertificatePage() {
               </Grid>
                             <Grid size={6}>
                 <TextField
-                  fullWidth
-                  label="Issued Date"
-                  value={formData.issue_date}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      issue_date: Date(
-                        e.target.value
-                      ),
-                    })
-                  }
-                />
+  fullWidth
+  label="Issue Date"
+  type="date"
+  value={formData.issue_date?.split("T")[0] || ""}
+  onChange={(e) =>
+    setFormData({
+      ...formData,
+      issue_date: new Date(
+        e.target.value
+      ).toISOString(),
+    })
+  }
+/>
               </Grid>
 
               <Grid size={6}>
