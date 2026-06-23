@@ -1,149 +1,10 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { useParams } from "next/navigation";
-
-// import {
-//   Container,
-//   Typography,
-//   Card,
-//   CardContent,
-//   Grid,
-//   Chip,
-//   CircularProgress,
-//   Box,
-// } from "@mui/material";
-
-// export default function CertificateDetailsPage() {
-//   const { id } = useParams();
-
-//   const [certificate, setCertificate] = useState(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     loadCertificate();
-//   }, [id]);
-
-//   async function loadCertificate() {
-//     try {
-//       const res = await fetch(
-//         `/api/certificates/${id}`
-//       );
-
-//       const data = await res.json();
-
-//       setCertificate(data);
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   if (loading) {
-//     return (
-//       <Box
-//         sx={{
-//           display: "flex",
-//           justifyContent: "center",
-//           mt: 10,
-//         }}
-//       >
-//         <CircularProgress />
-//       </Box>
-//     );
-//   }
-
-//   if (!certificate) {
-//     return (
-//       <Typography>
-//         Certificate not found
-//       </Typography>
-//     );
-//   }
-
-//   return (
-//     <Container maxWidth="lg" sx={{ py: 4 }}>
-//       <Typography variant="h4" mb={3}>
-//         Certificate Details
-//       </Typography>
-
-//       <Card>
-//         <CardContent>
-//           <Grid container spacing={3}>
-//             <Grid size={12}>
-//               <Typography variant="h5">
-//                 {certificate.name}
-//               </Typography>
-
-//               <Chip
-//                 label={certificate.status}
-//                 color="success"
-//                 sx={{ mt: 1 }}
-//               />
-//             </Grid>
-
-//             <Grid size={6}>
-//               <Typography color="text.secondary">
-//                 Course
-//               </Typography>
-//               <Typography>
-//                 {certificate.course}
-//               </Typography>
-//             </Grid>
-
-//             <Grid size={6}>
-//               <Typography color="text.secondary">
-//                 Grade
-//               </Typography>
-//               <Typography>
-//                 {certificate.grade}
-//               </Typography>
-//             </Grid>
-
-//             <Grid size={6}>
-//               <Typography color="text.secondary">
-//                 Score
-//               </Typography>
-//               <Typography>
-//                 {certificate.score}
-//               </Typography>
-//             </Grid>
-
-//             <Grid size={6}>
-//               <Typography color="text.secondary">
-//                 Rank
-//               </Typography>
-//               <Typography>
-//                 {certificate.rank}
-//               </Typography>
-//             </Grid>
-
-//             <Grid size={12}>
-//               <Typography variant="h6">
-//                 Student
-//               </Typography>
-
-//               <Typography>
-//                 {certificate.student?.name}
-//               </Typography>
-
-//               <Typography>
-//                 {certificate.student?.email}
-//               </Typography>
-//             </Grid>
-//           </Grid>
-//         </CardContent>
-//       </Card>
-//     </Container>
-//   );
-// }
-
 "use client";
-
+import Avatar from "@mui/material/Avatar";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-
+import { useParams, useRouter } from "next/navigation";
+import Button from "@mui/material/Button";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CertificateTemplate from "../../components/CertificateTemplate";
 import {
   Container,
   Typography,
@@ -156,9 +17,13 @@ import {
   Divider,
 } from "@mui/material";
 import Stack from '@mui/material/Stack';
-export default function CertificateDetailsPage() {
-  const { id } = useParams();
+import Dialog from "@mui/material/Dialog";
 
+
+export default function CertificateDetailsPage() {
+  const [openCertificate, setOpenCertificate] = useState(false);
+  const { id } = useParams();
+  const router = useRouter();
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -208,7 +73,18 @@ export default function CertificateDetailsPage() {
   }
 
   return (
+
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Button
+        startIcon={<ArrowBackIcon />}
+        variant="outlined"
+        sx={{ mb: 2 }}
+        onClick={() => router.push("/certificates")}
+      >
+        Back to Certificates
+      </Button>
+
+
       <Typography variant="h4" gutterBottom>
         Certificate Details
       </Typography>
@@ -392,7 +268,7 @@ export default function CertificateDetailsPage() {
       </Card>
 
       {/* Issuer */}
-      <Card sx={{ mb: 3 }}>
+      {/* <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Issuer Information
@@ -405,6 +281,41 @@ export default function CertificateDetailsPage() {
           <Typography>
             Email: {certificate.issuer?.email}
           </Typography>
+
+          <Typography>
+            Website: {certificate.issuer?.website}
+          </Typography>
+        </CardContent>
+      </Card> */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Issuer Information
+          </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 2,
+            }}
+          >
+            <Avatar
+              src={certificate.issuer?.logo}
+              sx={{ width: 64, height: 64 }}
+            />
+
+            <Box>
+              <Typography fontWeight="bold">
+                {certificate.issuer?.name}
+              </Typography>
+
+              <Typography>
+                {certificate.issuer?.email}
+              </Typography>
+            </Box>
+          </Box>
 
           <Typography>
             Website: {certificate.issuer?.website}
@@ -425,6 +336,24 @@ export default function CertificateDetailsPage() {
                 key={index}
                 label={skill}
                 color="primary"
+              />
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Categories
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            {certificate.categories?.map((item, index) => (
+              <Chip
+                key={index}
+                label={item}
+                color="secondary"
               />
             ))}
           </Stack>
@@ -498,6 +427,113 @@ export default function CertificateDetailsPage() {
         </CardContent>
       </Card>
 
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Documents
+          </Typography>
+
+          {certificate.documents?.map((doc) => (
+            <Box key={doc.id} sx={{ mb: 2 }}>
+              <Typography fontWeight="bold">
+                {doc.name}
+              </Typography>
+
+              <Typography>
+                Type: {doc.type}
+              </Typography>
+
+              <Typography>
+                Size: {doc.size} bytes
+              </Typography>
+
+              <Typography>
+                URL:
+              </Typography>
+
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {doc.url}
+              </a>
+            </Box>
+          ))}
+        </CardContent>
+      </Card>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Statistics
+          </Typography>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 4 }}>
+              Total Students:
+              {certificate.statistics?.total_students}
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              Average Score:
+              {certificate.statistics?.average_score}
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              Highest Score:
+              {certificate.statistics?.highest_score}
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              Completion Rate:
+              {certificate.statistics?.completion_rate}%
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              Global Ranking:
+              {certificate.statistics?.global_ranking}
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              Country Ranking:
+              {certificate.statistics?.country_ranking}
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Audit Trail
+          </Typography>
+
+          {certificate.audit_trail?.map(
+            (item, index) => (
+              <Box key={index} sx={{ mb: 2 }}>
+                <Typography>
+                  Action: {item.action}
+                </Typography>
+
+                <Typography>
+                  User: {item.user}
+                </Typography>
+
+                <Typography>
+                  IP: {item.ip_address}
+                </Typography>
+
+                <Typography>
+                  Time:
+                  {formatDate(item.timestamp)}
+                </Typography>
+
+                <Divider sx={{ mt: 1 }} />
+              </Box>
+            )
+          )}
+        </CardContent>
+      </Card>
       {/* Custom Fields */}
       <Card>
         <CardContent>
@@ -514,6 +550,30 @@ export default function CertificateDetailsPage() {
           </pre>
         </CardContent>
       </Card>
+      
+      
+       <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => setOpenCertificate(true)}
+          >
+            View Certificate
+          </Button>
+
+        </CardContent>
+      </Card>
+
+
+      <Dialog
+        open={openCertificate}
+        onClose={() => setOpenCertificate(false)}
+        maxWidth={false}
+      >
+
+        <CertificateTemplate certificate={certificate} />
+      </Dialog>
     </Container>
   );
 }

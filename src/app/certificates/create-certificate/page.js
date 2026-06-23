@@ -175,7 +175,7 @@ const DEFAULT_STATE = {
 };
 
 const SAMPLE_CERTIFICATE = {
-  name: "Alice Johnson",
+  name: "Akhil",
   course: "Mastering Next.js 16 & MUI",
   grade: "A+",
   status: "Completed",
@@ -184,11 +184,11 @@ const SAMPLE_CERTIFICATE = {
   issue_date: new Date().toISOString().slice(0, 16),
   expiry_date: new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
   student: {
-    name: "Alice Johnson",
+    name: "Akhil",
     email: "alice@example.com",
-    phone: "+1-555-9876",
-    country: "Canada",
-    city: "Toronto",
+    phone: "+9155598765674",
+    country: "India",
+    city: "PTA",
     interests: ["React", "Next.js", "Material UI"],
   },
   tags: ["nextjs", "mui", "frontend"],
@@ -268,7 +268,10 @@ const [createdCertificate, setCreatedCertificate] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: "", severity: "success" });
 const [categoryInput, setCategoryInput] = useState("");
 const [tagInput, setTagInput] = useState("");
-
+const isValidPhone = (phone) => {
+  const re = /^\+?[1-9]\d{7,14}$/;
+  return re.test(phone);
+};
   useEffect(() => {
     fetchCertificates();
   }, []);
@@ -470,38 +473,292 @@ const removeSkill = (index) => {
     return re.test(email);
   };
 
-  const validateCurrentStep = () => {
-    if (activeStep === 0) {
-      if (!formState.name || !formState.course || !formState.issue_date) {
-        showNotification("Certificate Name, Course, and Issue Date are required.", "warning");
-        return false;
-      }
-    } else if (activeStep === 1) {
-      if (!formState.student.name || !formState.student.email) {
-        showNotification("Student Name and Email are required.", "warning");
-        return false;
-      }
-      if (!isValidEmail(formState.student.email)) {
-        showNotification("Please enter a valid Student Email.", "warning");
-        return false;
-      }
-    } else if (activeStep === 3) {
-       // achievements check
-       for (const ach of formState.achievements) {
-         if (ach.badge_url && !isValidURL(ach.badge_url)) {
-           showNotification("One or more Achievement Badge URLs are invalid.", "warning");
-           return false;
-         }
-       }
-    }
-    return true;
-  };
+  // const validateCurrentStep = () => {
+  //   if (activeStep === 0) {
+  //     if (!formState.name || !formState.course || !formState.issue_date) {
+  //       showNotification("Certificate Name, Course, and Issue Date are required.", "warning");
+  //       return false;
+  //     }
+  //   } else if (activeStep === 1) {
+  //     if (!formState.student.name || !formState.student.email) {
+  //       showNotification("Student Name and Email are required.", "warning");
+  //       return false;
+  //     }
+  //     if (!isValidEmail(formState.student.email)) {
+  //       showNotification("Please enter a valid Student Email.", "warning");
+  //       return false;
+  //     }
+  //   } else if (activeStep === 3) {
+  //      // achievements check
+  //      for (const ach of formState.achievements) {
+  //        if (ach.badge_url && !isValidURL(ach.badge_url)) {
+  //          showNotification("One or more Achievement Badge URLs are invalid.", "warning");
+  //          return false;
+  //        }
+  //      }
+  //   }
+  //   return true;
+  // };
 
-  const handleNext = () => {
-    if (validateCurrentStep()) {
-      setActiveStep((prev) => prev + 1);
+  const validateStep1 = () => {
+  if (!formState.name.trim()) {
+    showNotification("Certificate Name is required.", "warning");
+    return false;
+  }
+
+  if (!formState.course.trim()) {
+    showNotification("Course Title is required.", "warning");
+    return false;
+  }
+
+  if (!formState.issue_date) {
+    showNotification("Issue Date is required.", "warning");
+    return false;
+  }
+
+  if (
+    formState.expiry_date &&
+    new Date(formState.expiry_date) <= new Date(formState.issue_date)
+  ) {
+    showNotification(
+      "Expiry Date must be later than Issue Date.",
+      "warning"
+    );
+    return false;
+  }
+
+  return true;
+};
+
+const validateStep2 = () => {
+  if (!formState.student.name.trim()) {
+    showNotification("Student Name is required.", "warning");
+    return false;
+  }
+  if (formState.skills.length === 0) {
+  showNotification(
+    "At least one skill is required.",
+    "warning"
+  );
+  return false;
+}
+if (!isValidPhone(formState.student.phone)) {
+  showNotification(
+    "Please enter a valid phone number.",
+    "warning"
+  );
+  return false;
+}
+  if (!formState.student.email.trim()) {
+    showNotification("Student Email is required.", "warning");
+    return false;
+  }
+
+  if (!isValidEmail(formState.student.email)) {
+    showNotification("Please enter a valid Student Email.", "warning");
+    return false;
+  }
+
+  if (!formState.student.phone.trim()) {
+    showNotification("Student Phone is required.", "warning");
+    return false;
+  }
+
+  if (!formState.student.country.trim()) {
+    showNotification("Country is required.", "warning");
+    return false;
+  }
+
+  if (!formState.student.city.trim()) {
+    showNotification("City is required.", "warning");
+    return false;
+  }
+
+  return true;
+};
+
+const validateStep3 = () => {
+  if (!formState.score) {
+    showNotification("Score is required.", "warning");
+    return false;
+  }
+
+  const score = Number(formState.score);
+
+  if (isNaN(score) || score < 0 || score > 100) {
+    showNotification(
+      "Score must be a number between 0 and 100.",
+      "warning"
+    );
+    return false;
+  }
+
+  if (!formState.grade) {
+    showNotification("Grade is required.", "warning");
+    return false;
+  }
+
+  if (!formState.rank) {
+    showNotification("Rank is required.", "warning");
+    return false;
+  }
+
+  if (formState.modules.length === 0) {
+    showNotification("At least one module is required.", "warning");
+    return false;
+  }
+
+  for (const module of formState.modules) {
+    if (!module.name || !module.name.trim()) {
+      showNotification("Module Name is required.", "warning");
+      return false;
     }
-  };
+
+    if (
+      Number(module.score) > Number(module.max_score)
+    ) {
+      showNotification(
+        `Module "${module.name}" score cannot exceed max score.`,
+        "warning"
+      );
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const validateStep4 = () => {
+  if (formState.categories.length === 0) {
+    showNotification(
+      "At least one category is required.",
+      "warning"
+    );
+    return false;
+  }
+
+  if (formState.skills.length === 0) {
+    showNotification(
+      "At least one skill is required.",
+      "warning"
+    );
+    return false;
+  }
+
+  if (formState.tags.length === 0) {
+    showNotification(
+      "At least one tag is required.",
+      "warning"
+    );
+    return false;
+  }
+
+  for (const ach of formState.achievements) {
+    if (!ach.title || !ach.title.trim()) {
+      showNotification(
+        "Achievement Title cannot be empty.",
+        "warning"
+      );
+      return false;
+    }
+
+    if (
+      ach.badge_url &&
+      !isValidURL(ach.badge_url)
+    ) {
+      showNotification(
+        "One or more Achievement Badge URLs are invalid.",
+        "warning"
+      );
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const validateStep5 = () => {
+  if (formState.documents.length === 0) {
+    showNotification(
+      "At least one document is required.",
+      "warning"
+    );
+    return false;
+  }
+
+  for (const doc of formState.documents) {
+    if (!doc.name || !doc.name.trim()) {
+      showNotification(
+        "Document Name is required.",
+        "warning"
+      );
+      return false;
+    }
+
+    if (!doc.url || !doc.url.trim()) {
+      showNotification(
+        "Document URL is required.",
+        "warning"
+      );
+      return false;
+    }
+
+    if (!isValidURL(doc.url)) {
+      showNotification(
+        `Invalid URL for document "${doc.name}".`,
+        "warning"
+      );
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const validateAll = () => {
+  return (
+    validateStep1() &&
+    validateStep2() &&
+    validateStep3() &&
+    validateStep4() &&
+    validateStep5()
+  );
+};
+
+
+
+const handleNext = () => {
+  let isValid = true;
+
+  switch (activeStep) {
+    case 0:
+      isValid = validateStep1();
+      break;
+
+    case 1:
+      isValid = validateStep2();
+      break;
+
+    case 2:
+      isValid = validateStep3();
+      break;
+
+    case 3:
+      isValid = validateStep4();
+      break;
+
+    case 4:
+      isValid = validateStep5();
+      break;
+
+    default:
+      break;
+  }
+
+  if (isValid) {
+    setActiveStep((prev) => prev + 1);
+  }
+};
 
 const handleBack = () => {
   if (activeStep === 0) {
@@ -556,9 +813,9 @@ const handleBack = () => {
       : ["General"];
 
     // Ensure tags/categories/skills are non-empty arrays (Go binding:"required")
-    const tags = formState.tags.length > 0 ? formState.tags : ["certificate"];
-    const categories = formState.categories.length > 0 ? formState.categories : ["General"];
-    const skills = formState.skills.length > 0 ? formState.skills : ["General"];
+const tags = formState.tags;
+const categories = formState.categories;
+const skills = formState.skills;
 
     // Ensure modules has at least one entry (Go binding:"required")
     const modules = formState.modules.length > 0
@@ -636,9 +893,9 @@ const handleBack = () => {
       },
       issuer: {
         id: Math.floor(Math.random() * 900000) + 100,
-        name: "Kerala Blockchain Academy",
-        email: "info@kba.ai",
-        website: "https://kba.ai",
+        name: "Test Academy",
+        email: "info@test.ai",
+        website: "https://test.ai",
         logo: "https://picsum.photos/id/1025/100",
       },
       tags,
@@ -674,9 +931,10 @@ const handleBack = () => {
     };
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateCurrentStep()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!validateAll()) return;
 
     setSubmitting(true);
     setApiResponse(null);
@@ -765,34 +1023,34 @@ const handleBack = () => {
                     <Grid container spacing={3}>
                       <Grid size={12}><Typography variant="h6" color="secondary">Certificate Information</Typography></Grid>
                       <Grid size={{ xs: 12, sm: 8 }}>
-                        <TextField label="Certificate Name *" fullWidth value={formState.name} onChange={(e) => handleTextChange("name", e.target.value)} required />
+                        <TextField label="Certificate Name" fullWidth value={formState.name} onChange={(e) => handleTextChange("name", e.target.value)} required />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <TextField select label="Status" fullWidth value={formState.status} onChange={(e) => handleTextChange("status", e.target.value)}>
-                          <MenuItem value="Draft">Draft</MenuItem>
+                          <MenuItem value="Pending  ">Pending</MenuItem>
                           <MenuItem value="Completed">Completed</MenuItem>
                           <MenuItem value="Revoked">Revoked</MenuItem>
                           <MenuItem value="Suspended">Suspended</MenuItem>
                         </TextField>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 8 }}>
-                        <TextField label="Course Title *" fullWidth value={formState.course} onChange={(e) => handleTextChange("course", e.target.value)} required />
+                        <TextField label="Course Title" fullWidth value={formState.course} onChange={(e) => handleTextChange("course", e.target.value)} required />
                       </Grid>
 
                       <Grid size={12}><Divider sx={{ my: 1 }}><Chip label="Dates" size="small" /></Divider></Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField label="Issue Date *" type="datetime-local" fullWidth value={formState.issue_date} onChange={(e) => handleTextChange("issue_date", e.target.value)} required slotProps={{
+                        <TextField label="Issue Date" type="datetime-local" fullWidth value={formState.issue_date} onChange={(e) => handleTextChange("issue_date", e.target.value)} required slotProps={{
     inputLabel: {
       shrink: true,
     },
   }} />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField label="Expiry Date" type="datetime-local" fullWidth value={formState.expiry_date} onChange={(e) => handleTextChange("expiry_date", e.target.value)} slotProps={{
+                        <TextField label="Expiry Date" type="datetime-local" fullWidth value={formState.expiry_date} onChange={(e) => handleTextChange("expiry_date", e.target.value)} required slotProps={{
     inputLabel: {
       shrink: true,
     },
-  }} helperText="Leave blank if does not expire" />
+  }} />
                       </Grid>
                     </Grid>
                   )}
@@ -802,44 +1060,28 @@ const handleBack = () => {
                     <Grid container spacing={3}>
                       <Grid size={12}><Typography variant="h6" color="secondary">Student Profile Details</Typography></Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField label="Student Name *" fullWidth value={formState.student.name} onChange={(e) => handleNestedChange("student", "name", e.target.value)} required />
+                        <TextField label="Student Name" fullWidth value={formState.student.name} onChange={(e) => handleNestedChange("student", "name", e.target.value)} required />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField label="Student Email *" type="email" fullWidth value={formState.student.email} onChange={(e) => handleNestedChange("student", "email", e.target.value)} required />
+                        <TextField label="Student Email" type="email" fullWidth value={formState.student.email} onChange={(e) => handleNestedChange("student", "email", e.target.value)} required />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField label="Student Phone" fullWidth value={formState.student.phone} onChange={(e) => handleNestedChange("student", "phone", e.target.value)} />
+                        <TextField label="Student Phone" fullWidth value={formState.student.phone} onChange={(e) => handleNestedChange("student", "phone", e.target.value)} required/>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField label="Country" fullWidth value={formState.student.country} onChange={(e) => handleNestedChange("student", "country", e.target.value)} />
+                        <TextField label="Country" fullWidth value={formState.student.country} onChange={(e) => handleNestedChange("student", "country", e.target.value)} required/>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField label="City" fullWidth value={formState.student.city} onChange={(e) => handleNestedChange("student", "city", e.target.value)} />
+                        <TextField label="City" fullWidth value={formState.student.city} onChange={(e) => handleNestedChange("student", "city", e.target.value)} required />
                       </Grid>
-                      {/* <Grid size={12}>
-                        <Autocomplete
-                          multiple
-                          freeSolo
-                          options={[]}
-                          value={formState.student.interests}
-                          onChange={(_, newValue) => handleNestedChange("student", "interests", newValue)}
-                          renderValue={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip variant="outlined" label={option} {...getTagProps({ index })} color="primary" key={index} />
-                            ))
-                          }
-                          renderInput={(params) => (
-                            <TextField {...params} label="Student Interests" placeholder="Type and press enter" />
-                          )}
-                        />
-                      </Grid> */}
+                      
                       <Grid container spacing={2}>
   <Grid size={{ xs: 12, sm: 8 }}>
     <TextField
       label="Skill"
       fullWidth
       value={skillInput}
-      onChange={(e) => setSkillInput(e.target.value)}
+      onChange={(e) => setSkillInput(e.target.value)} required
     />
   </Grid>
 
@@ -873,12 +1115,12 @@ const handleBack = () => {
                   {/* Step 3: Assessment Information */}
                   {activeStep === 2 && (
                     <Grid container spacing={3}>
-                      <Grid size={12}><Typography variant="h6" color="secondary">Assessment Results (Optional)</Typography></Grid>
+                      <Grid size={12}><Typography variant="h6" color="secondary">Assessment Results</Typography></Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField label="Score" type="number" fullWidth value={formState.score} onChange={(e) => handleTextChange("score", e.target.value)} helperText="Percentage is auto-calculated" />
+                        <TextField label="Score" type="number" fullWidth value={formState.score} onChange={(e) => handleTextChange("score", e.target.value)} helperText="Percentage is auto-calculated" required/>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField select label="Grade" fullWidth value={formState.grade} onChange={(e) => handleTextChange("grade", e.target.value)}>
+                        <TextField select label="Grade" fullWidth value={formState.grade} onChange={(e) => handleTextChange("grade", e.target.value)} required>
                           <MenuItem value=""><em>None</em></MenuItem>
                           <MenuItem value="A+">A+</MenuItem>
                           <MenuItem value="A">A</MenuItem>
@@ -890,28 +1132,28 @@ const handleBack = () => {
                         </TextField>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <TextField label="Class Rank" type="number" fullWidth value={formState.rank} onChange={(e) => handleTextChange("rank", e.target.value)} />
+                        <TextField label="Class Rank" type="number" fullWidth value={formState.rank} onChange={(e) => handleTextChange("rank", e.target.value)} required/>
                       </Grid>
 
-                      <Grid size={12}><Divider sx={{ my: 1 }}><Chip label="Modules" size="small" /></Divider></Grid>
+                      <Grid size={12}><Divider sx={{ my: 1 }}><Chip label="Modules" size="small"/></Divider></Grid>
                       <Grid size={12}>
                         <Card variant="outlined" sx={{ p: 2 }}>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <TextField label="Module Name" size="small" fullWidth value={moduleInput.name} onChange={(e) => setModuleInput({ ...moduleInput, name: e.target.value })} />
+                              <TextField label="Module Name" size="small" fullWidth value={moduleInput.name} onChange={(e) => setModuleInput({ ...moduleInput, name: e.target.value })} required/>
                             </Grid>
                              
                               <Grid size={{ xs: 4, sm: 2 }}>
-                              <TextField label="Score" type="number" size="small" value={moduleInput.score} onChange={(e) => setModuleInput({ ...moduleInput, score: e.target.value })} />
+                              <TextField label="Score" type="number" size="small" value={moduleInput.score} onChange={(e) => setModuleInput({ ...moduleInput, score: e.target.value })} required />
                             </Grid>
                             <Grid size={{ xs: 4, sm: 2 }}>
-                              <TextField label="Max" type="number" size="small" value={moduleInput.max_score} onChange={(e) => setModuleInput({ ...moduleInput, max_score: e.target.value })} />
+                              <TextField label="Max" type="number" size="small" value={moduleInput.max_score} onChange={(e) => setModuleInput({ ...moduleInput, max_score: e.target.value })} required />
                             </Grid>
                             <Grid size={{ xs: 4, sm: 2 }}>
                               <FormControlLabel control={<Checkbox checked={moduleInput.passed} onChange={(e) => setModuleInput({ ...moduleInput, passed: e.target.checked })} size="small" />} label="Passed" />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <TextField label="Completed At" type="datetime-local" size="small" fullWidth slotProps={{
+                              <TextField label="Completed At" type="datetime-local" size="small" required fullWidth slotProps={{
     inputLabel: {
       shrink: true,
     },
@@ -938,21 +1180,7 @@ const handleBack = () => {
                   {activeStep === 3 && (
                     <Grid container spacing={3}>
                        <Grid size={12}><Typography variant="h6" color="secondary">Classification</Typography></Grid>
-                       {/* <Grid size={12}>
-                        <Autocomplete
-                          multiple
-                          freeSolo
-                          options={[]}
-                          value={formState.categories}
-                          onChange={(_, newValue) => handleTextChange("categories", newValue)}
-                          renderValue={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip variant="outlined" label={option} {...getTagProps({ index })} color="secondary" key={index} />
-                            ))
-                          }
-                          renderInput={(params) => <TextField {...params} label="Categories" placeholder="e.g. Software Engineering" />}
-                        />
-                      </Grid> */}
+                       
                       <Grid size={12}>
   <Card variant="outlined" sx={{ p: 2 }}>
     <Typography variant="subtitle2" gutterBottom>
@@ -965,7 +1193,7 @@ const handleBack = () => {
           fullWidth
           label="Category"
           value={categoryInput}
-          onChange={(e) => setCategoryInput(e.target.value)}
+          onChange={(e) => setCategoryInput(e.target.value)} required
         />
       </Grid>
 
@@ -976,7 +1204,7 @@ const handleBack = () => {
           startIcon={<AddIcon />}
           onClick={() =>
             addItemToArray("categories", categoryInput, setCategoryInput)
-          }
+          } 
         >
           Add
         </Button>
@@ -995,21 +1223,7 @@ const handleBack = () => {
     </Box>
   </Card>
 </Grid>
-                      {/* <Grid size={12}>
-                        <Autocomplete
-                          multiple
-                          freeSolo
-                          options={[]}
-                          value={formState.skills}
-                          onChange={(_, newValue) => handleTextChange("skills", newValue)}
-                          renderValue={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip variant="outlined" label={option} {...getTagProps({ index })} color="success" key={index} />
-                            ))
-                          }
-                          renderInput={(params) => <TextField {...params} label="Skills Acquired" placeholder="e.g. Next.js, React" />}
-                        />
-                      </Grid> */}
+
 
                       <Grid size={12}>
   <Card variant="outlined" sx={{ p: 2 }}>
@@ -1023,7 +1237,7 @@ const handleBack = () => {
           fullWidth
           label="Skill"
           value={skillInput}
-          onChange={(e) => setSkillInput(e.target.value)}
+          onChange={(e) => setSkillInput(e.target.value)} required
         />
       </Grid>
 
@@ -1053,21 +1267,7 @@ const handleBack = () => {
     </Box>
   </Card>
 </Grid>
-                      {/* <Grid size={12}>
-                        <Autocomplete
-                          multiple
-                          freeSolo
-                          options={[]}
-                          value={formState.tags}
-                          onChange={(_, newValue) => handleTextChange("tags", newValue)}
-                          renderValue={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip variant="outlined" label={option} {...getTagProps({ index })} color="primary" key={index} />
-                            ))
-                          }
-                          renderInput={(params) => <TextField {...params} label="Tags" placeholder="e.g. frontend, webdev" />}
-                        />
-                      </Grid> */}
+                  
 
                       <Grid size={12}>
   <Card variant="outlined" sx={{ p: 2 }}>
@@ -1081,7 +1281,7 @@ const handleBack = () => {
           fullWidth
           label="Tag"
           value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
+          onChange={(e) => setTagInput(e.target.value)} required
         />
       </Grid>
 
@@ -1150,13 +1350,13 @@ const handleBack = () => {
                           <Typography variant="h6" sx={{ color: "primary.main", mb: 2 }}>Documents</Typography>
                           <Grid container spacing={2}>
                             <Grid size={12}>
-                              <TextField label="Document Name" size="small" fullWidth value={documentInput.name} onChange={(e) => setDocumentInput({ ...documentInput, name: e.target.value })} />
+                              <TextField label="Document Name" size="small" fullWidth value={documentInput.name} onChange={(e) => setDocumentInput({ ...documentInput, name: e.target.value })} required />
                             </Grid>
                             <Grid size={12}>
-                              <TextField label="Document URL" size="small" fullWidth value={documentInput.url} onChange={(e) => setDocumentInput({ ...documentInput, url: e.target.value })} />
+                              <TextField label="Document URL" size="small" fullWidth value={documentInput.url} onChange={(e) => setDocumentInput({ ...documentInput, url: e.target.value })} required />
                             </Grid>
                             <Grid size={12}>
-                              <TextField label="Document Type (e.g. pdf, png)" size="small" fullWidth value={documentInput.type} onChange={(e) => setDocumentInput({ ...documentInput, type: e.target.value })} />
+                              <TextField label="Document Type (e.g. pdf, png)" size="small" fullWidth value={documentInput.type} onChange={(e) => setDocumentInput({ ...documentInput, type: e.target.value })} required/>
                             </Grid>
                             <Grid size={12}>
                               <Button variant="outlined" fullWidth startIcon={<AddIcon />} onClick={addDocument}>Add Document</Button>
@@ -1460,99 +1660,6 @@ const handleBack = () => {
               </Card>
             </Grid>
 
-            {/* Right Column: Code viewer & Live Response */}
-            {/* <Grid size={{ xs: 12, lg: 4 }}>
-              <Grid container spacing={3}>
-                <Grid size={12}>
-                  <Card>
-                    <CardHeader
-                      title="API Live Integration"
-                      subheader="Payload view and Server REST API status"
-                      avatar={<Avatar sx={{ bgcolor: "secondary.main" }}><CodeIcon /></Avatar>}
-                      action={
-                        <Button size="small" onClick={() => setShowJsonView(!showJsonView)}>
-                          {showJsonView ? "Hide Code" : "Show Payload"}
-                        </Button>
-                      }
-                      sx={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}
-                    />
-                    <CardContent>
-                      {showJsonView ? (
-                        <Box sx={{ bgcolor: "#05050f", p: 2, borderRadius: 2, overflowX: "auto", border: "1px solid rgba(255,255,255,0.05)" }}>
-                          <pre style={{ margin: 0, fontSize: "11px", color: "#64b5f6" }}>
-                            {JSON.stringify(getCompiledJson(), null, 2)}
-                          </pre>
-                        </Box>
-                      ) : (
-                        <Box sx={{ py: 1 }}>
-                          <Typography variant="body2" sx={{ mb: 2 }}>
-                            The form validates and compiles a complete JSON request that matches the Go API models perfectly. 
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            <strong>Base URL:</strong> http://localhost:8081
-                          </Typography>
-                          <Chip label="Protected Endpoints" color="error" size="small" variant="outlined" />
-                        </Box>
-                      )}
-
-                      {apiResponse && (
-                        <Box sx={{ mt: 3 }}>
-                          <Divider sx={{ mb: 2 }} />
-                          <Typography variant="subtitle2" color="secondary" gutterBottom>
-                            Last Server Response:
-                          </Typography>
-                          <Alert 
-                            severity={apiResponse.status >= 200 && apiResponse.status < 300 ? "success" : "error"}
-                            icon={apiResponse.status >= 200 && apiResponse.status < 300 ? <CheckCircleIcon /> : <ErrorIcon />}
-                            sx={{ mb: 1 }}
-                          >
-                            HTTP Status: <strong>{apiResponse.status} {apiResponse.statusText}</strong>
-                          </Alert>
-                          <Box sx={{ bgcolor: "#070710", p: 1.5, borderRadius: 1.5, maxHeight: 180, overflowY: "auto", border: "1px solid rgba(255,255,255,0.05)" }}>
-                            <pre style={{ margin: 0, fontSize: "10px", color: apiResponse.status >= 200 && apiResponse.status < 300 ? "#81c784" : "#e57373" }}>
-                              {JSON.stringify(apiResponse.data || apiResponse.error, null, 2)}
-                            </pre>
-                          </Box>
-                        </Box>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-
-                <Grid size={12}>
-                  <Card sx={{ minHeight: "300px" }}>
-                    <CardHeader
-                      title="Registered Credentials"
-                      subheader="Recently created certificates in system"
-                      avatar={<Avatar sx={{ bgcolor: "success.main" }}><HistoryIcon /></Avatar>}
-                    />
-                    <CardContent>
-                      {loadingList ? (
-                        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                          <CircularProgress />
-                        </Box>
-                      ) : certificates.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-                          No certificates found in the registry.
-                        </Typography>
-                      ) : (
-                        <List dense>
-                          {certificates.slice(0, 5).map((cert) => (
-                            <ListItem key={cert.id} divider>
-                              <ListItemText 
-                                primary={cert.name} 
-                                secondary={`${cert.course} • ${new Date(cert.issue_date || cert.created_at).toLocaleDateString()}`} 
-                              />
-                              <Chip size="small" label={cert.status} color={cert.status === "Issued" ? "success" : "default"} />
-                            </ListItem>
-                          ))}
-                        </List>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            </Grid> */}
           </Grid>
         </Container>
       </Box>
