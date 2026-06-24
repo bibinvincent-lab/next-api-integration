@@ -11,7 +11,7 @@ export default function DummyPage() {
     <Container maxWidth="md" sx={{ mt: 5 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
-          Dummy Page
+          Sample Page
         </Typography>
 
         <Typography variant="body1" sx={{ mb: 3 }}>

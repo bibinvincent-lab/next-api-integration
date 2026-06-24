@@ -140,7 +140,7 @@ const DEFAULT_STATE = {
   name: "",
   course: "",
   grade: "",
-  status: "Draft",
+  status: "Pending",
   score: "",
   rank: "",
   issue_date: "",
@@ -1027,7 +1027,7 @@ const handleSubmit = async (e) => {
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <TextField select label="Status" fullWidth value={formState.status} onChange={(e) => handleTextChange("status", e.target.value)}>
-                          <MenuItem value="Pending  ">Pending</MenuItem>
+                          <MenuItem value="Pending">Pending</MenuItem>
                           <MenuItem value="Completed">Completed</MenuItem>
                           <MenuItem value="Revoked">Revoked</MenuItem>
                           <MenuItem value="Suspended">Suspended</MenuItem>
