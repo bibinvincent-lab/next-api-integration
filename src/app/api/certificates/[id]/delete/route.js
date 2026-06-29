@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = "http://localhost:8081";
-const API_KEY = "XmoKQLLRC5M3ufz8Y68jXti8bafd9MAn";
+const BACKEND_URL = process.env.BACKEND_URL;
+const API_KEY = process.env.API_KEY;
 
 export async function DELETE(req, { params }) {
   try {

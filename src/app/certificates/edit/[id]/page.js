@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import { MenuItem } from "@mui/material";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Container,
   Card,
@@ -16,12 +21,24 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Divider,
+  Switch,
 } from "@mui/material";
 
 export default function EditCertificatePage() {
   const { id } = useParams();
   const router = useRouter();
-
+  const [skillInput, setSkillInput] = useState("");
+  const [categoryInput, setCategoryInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [moduleInput, setModuleInput] = useState({ name: "", score: "", max_score: "", passed: true });
+  const [achievementInput, setAchievementInput] = useState({ title: "", description: "", badge_url: "" });
+  const [documentInput, setDocumentInput] = useState({ name: "", type: "", url: "" });
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -81,21 +98,6 @@ export default function EditCertificatePage() {
     loadCertificate();
   }, [id]);
 
-  // async function loadCertificate() {
-  //   try {
-  //     const res = await fetch(
-  //       `/api/certificates/${id}`
-  //     );
-
-  //     const data = await res.json();
-
-  //     setFormData(data);
-  //   } catch (error) {
-  //     console.error(error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
   async function loadCertificate() {
     try {
       const res = await fetch(`/api/certificates/${id}`);
@@ -121,40 +123,118 @@ export default function EditCertificatePage() {
       setLoading(false);
     }
   }
+  const addItemToArray = (field, value, setter) => {
+    if (!value.trim()) {
+      setSnackbar({
+        open: true,
+        message: `${field} cannot be empty`,
+        severity: "warning",
+      });
+      return;
+    }
 
-  // async function handleSubmit(e) {
-  //   e.preventDefault();
+    setFormData((prev) => {
+      if (prev[field].includes(value.trim())) {
 
-  //   console.log("Submitting:", formData);
+        setSnackbar({
+          open: true,
+          message: `${value} already exists`,
+          severity: "warning",
+        });
+        return prev;
+      }
 
-  //   try {
-  //     const res = await fetch(
-  //       `/api/certificates/${id}/update`,
-  //       {
-  //         method: "PUT",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify(formData),
-  //       }
-  //     );
+      return {
+        ...prev,
+        [field]: [...prev[field], value.trim()],
+      };
+    });
 
-  //     const responseText = await res.text();
+    setter("");
+  };
 
-  //     console.log("Status:", res.status);
-  //     console.log("Response:", responseText);
+  const removeItemFromArray = (field, index) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index),
+    }));
+  };
 
-  //     if (!res.ok) {
-  //       throw new Error(responseText);
-  //     }
+  const addModule = () => {
+    if (!moduleInput.name.trim()) {
+      setSnackbar({ open: true, message: "Module name is required", severity: "warning" });
+      return;
+    }
+    const scoreVal = Number(moduleInput.score) || 0;
+    const maxVal = Number(moduleInput.max_score) || 100;
+    const newModule = {
+      name: moduleInput.name.trim(),
+      score: scoreVal,
+      max_score: maxVal,
+      passed: moduleInput.passed,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      modules: [...(prev.modules || []), newModule],
+    }));
+    setModuleInput({ name: "", score: "", max_score: "", passed: true });
+  };
 
-  //     alert("Updated successfully");
-  //     router.push("/certificates");
-  //   } catch (error) {
-  //     console.error(error);
-  //     alert(error.message);
-  //   }
-  // }
+  const removeModule = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      modules: (prev.modules || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const addAchievement = () => {
+    if (!achievementInput.title.trim()) {
+      setSnackbar({ open: true, message: "Achievement title is required", severity: "warning" });
+      return;
+    }
+    const newAchievement = {
+      title: achievementInput.title.trim(),
+      description: achievementInput.description.trim(),
+      badge_url: achievementInput.badge_url.trim(),
+    };
+    setFormData((prev) => ({
+      ...prev,
+      achievements: [...(prev.achievements || []), newAchievement],
+    }));
+    setAchievementInput({ title: "", description: "", badge_url: "" });
+  };
+
+  const removeAchievement = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      achievements: (prev.achievements || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const addDocument = () => {
+    if (!documentInput.name.trim() || !documentInput.url.trim()) {
+      setSnackbar({ open: true, message: "Document name and URL are required", severity: "warning" });
+      return;
+    }
+    const newDocument = {
+      name: documentInput.name.trim(),
+      url: documentInput.url.trim(),
+      type: documentInput.type.trim() || "pdf",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      documents: [...(prev.documents || []), newDocument],
+    }));
+    setDocumentInput({ name: "", type: "", url: "" });
+  };
+
+  const removeDocument = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: (prev.documents || []).filter((_, i) => i !== index),
+    }));
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -209,7 +289,18 @@ export default function EditCertificatePage() {
   }
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
   }
 
   return (
@@ -264,7 +355,7 @@ export default function EditCertificatePage() {
                 />
               </Grid>
 
-              <Grid size={6}>
+              {/* <Grid size={6}>
                 <TextField
                   fullWidth
                   label="Grade"
@@ -276,6 +367,32 @@ export default function EditCertificatePage() {
                     })
                   }
                 />
+              </Grid> */}
+
+              <Grid size={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Grade"
+                  value={formData.grade || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      grade: e.target.value,
+                    })
+                  }
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  <MenuItem value="A+">A+</MenuItem>
+                  <MenuItem value="A">A</MenuItem>
+                  <MenuItem value="B+">B+</MenuItem>
+                  <MenuItem value="B">B</MenuItem>
+                  <MenuItem value="C">C</MenuItem>
+                  <MenuItem value="Pass">Pass</MenuItem>
+                  <MenuItem value="Distinction">Distinction</MenuItem>
+                </TextField>
               </Grid>
 
               <Grid size={6}>
@@ -362,7 +479,7 @@ export default function EditCertificatePage() {
                 />
               </Grid>
 
-              <Grid size={6}>
+              {/* <Grid size={6}>
                 <TextField
                   fullWidth
                   label="Status"
@@ -374,6 +491,25 @@ export default function EditCertificatePage() {
                     })
                   }
                 />
+              </Grid> */}
+              <Grid size={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Status"
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      status: e.target.value,
+                    })
+                  }
+                >
+                  <MenuItem value="Pending">Pending</MenuItem>
+                  <MenuItem value="Completed">Completed</MenuItem>
+                  <MenuItem value="Revoked">Revoked</MenuItem>
+                  <MenuItem value="Suspended">Suspended</MenuItem>
+                </TextField>
               </Grid>
 
               <Grid size={6}>
@@ -550,59 +686,415 @@ export default function EditCertificatePage() {
                 </Typography>
               </Grid>
 
+              {/* <Grid size={12}>
+                <TextField
+                  label="Skill"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                />
+
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="outlined"
+                  onClick={() =>
+                    addItemToArray("skills", skillInput, setSkillInput)
+                  }
+                >
+                  Add Skill
+                </Button>
+
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+                  {formData.skills.map((skill, index) => (
+                    <Chip
+                      key={index}
+                      label={skill}
+                      onDelete={() => removeItemFromArray("skills", index)}
+                    />
+                  ))}
+                </Box>
+              </Grid> */}
+
               <Grid size={12}>
+  <Grid container spacing={2}>
+    <Grid size={9}>
+      <TextField
+        fullWidth
+        label="Skill"
+        value={skillInput}
+        onChange={(e) => setSkillInput(e.target.value)}
+      />
+    </Grid>
+
+    <Grid size={3}>
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={() =>
+          addItemToArray("skills", skillInput, setSkillInput)
+        }
+      >
+        Add
+      </Button>
+    </Grid>
+
+    <Grid size={12}>
+      <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+        {formData.skills.map((skill, index) => (
+          <Chip
+            key={index}
+            label={skill}
+            onDelete={() =>
+              removeItemFromArray("skills", index)
+            }
+          />
+        ))}
+      </Box>
+    </Grid>
+  </Grid>
+</Grid>
+
+              {/* <Grid size={12}>
+                
                 <TextField
                   fullWidth
-                  label="Skills (comma separated)"
-                  value={(formData.skills || []).join(", ")}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      skills: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
+                  label="Category"
+                  value={categoryInput}
+                  onChange={(e) => setCategoryInput(e.target.value)}
                 />
+
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="outlined"
+                  onClick={() =>
+                    addItemToArray("categories", categoryInput, setCategoryInput)
+                  }
+                >
+                  Add Category
+                </Button>
+
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+                  {formData.categories.map((category, index) => (
+                    <Chip
+                      key={index}
+                      label={category}
+                      onDelete={() =>
+                        removeItemFromArray("categories", index)
+                      }
+                    />
+                  ))}
+                </Box>
+              </Grid> */}
+              <Grid size={12}>
+  <Grid container spacing={2}>
+    <Grid size={9}>
+      <TextField
+        fullWidth
+        label="Category"
+        value={categoryInput}
+        onChange={(e) => setCategoryInput(e.target.value)}
+      />
+    </Grid>
+
+    <Grid size={3}>
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={() =>
+          addItemToArray("categories", categoryInput, setCategoryInput)
+        }
+      >
+        Add
+      </Button>
+    </Grid>
+
+    <Grid size={12}>
+      <Box
+        sx={{
+          mt: 2,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1,
+        }}
+      >
+        {formData.categories.map((category, index) => (
+          <Chip
+            key={index}
+            label={category}
+            color="secondary"
+            onDelete={() =>
+              removeItemFromArray("categories", index)
+            }
+          />
+        ))}
+      </Box>
+    </Grid>
+  </Grid>
+</Grid>
+
+              <Grid size={12}>
+                <Grid container spacing={2}>
+                  <Grid size={9}>
+                    <TextField
+                      fullWidth
+                      label="Tag"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                    />
+                  </Grid>
+
+                  <Grid size={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() =>
+                        addItemToArray("tags", tagInput, setTagInput)
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Grid>
+
+                  <Grid size={12}>
+                    <Box
+                      sx={{
+                        mt: 2,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1,
+                      }}
+                    >
+                      {formData.tags.map((tag, index) => (
+                        <Chip
+                          key={index}
+                          label={tag}
+                          color="primary"
+                          onDelete={() =>
+                            removeItemFromArray("tags", index)
+                          }
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              {/* Modules */}
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                  Modules
+                </Typography>
               </Grid>
 
               <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Categories (comma separated)"
-                  value={(formData.categories || []).join(", ")}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      categories: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
+                <Grid container spacing={2} alignItems="center">
+                  <Grid size={5}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Module Name"
+                      value={moduleInput.name}
+                      onChange={(e) => setModuleInput({ ...moduleInput, name: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Score"
+                      type="number"
+                      value={moduleInput.score}
+                      onChange={(e) => setModuleInput({ ...moduleInput, score: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Max"
+                      type="number"
+                      value={moduleInput.max_score}
+                      onChange={(e) => setModuleInput({ ...moduleInput, max_score: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={2}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={moduleInput.passed}
+                          onChange={(e) => setModuleInput({ ...moduleInput, passed: e.target.checked })}
+                        />
+                      }
+                      label="Passed"
+                    />
+                  </Grid>
+                  <Grid size={1}>
+                    <Button
+                      variant="outlined"
+                      onClick={addModule}
+                      fullWidth
+                      sx={{ py: 1 }}
+                    >
+                      <AddIcon />
+                    </Button>
+                  </Grid>
+                </Grid>
+
+                <List dense sx={{ mt: 1, maxHeight: 150, overflow: "auto" }}>
+                  {(formData.modules || []).map((m, idx) => (
+                    <ListItem key={idx} divider>
+                      <ListItemText
+                        primary={m.name}
+                        secondary={`Score: ${m.score}/${m.max_score} | Passed: ${m.passed ? "Yes" : "No"}`}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton edge="end" color="error" onClick={() => removeModule(idx)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+
+              {/* Achievements */}
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                  Achievements
+                </Typography>
               </Grid>
 
               <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Tags (comma separated)"
-                  value={(formData.tags || []).join(", ")}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      tags: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
+                <Grid container spacing={2} alignItems="center">
+                  <Grid size={4}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Title"
+                      value={achievementInput.title}
+                      onChange={(e) => setAchievementInput({ ...achievementInput, title: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={4}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Description"
+                      value={achievementInput.description}
+                      onChange={(e) => setAchievementInput({ ...achievementInput, description: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Badge URL"
+                      value={achievementInput.badge_url}
+                      onChange={(e) => setAchievementInput({ ...achievementInput, badge_url: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={1}>
+                    <Button
+                      variant="outlined"
+                      onClick={addAchievement}
+                      fullWidth
+                      sx={{ py: 1 }}
+                    >
+                      <AddIcon />
+                    </Button>
+                  </Grid>
+                </Grid>
+
+                <List dense sx={{ mt: 1, maxHeight: 150, overflow: "auto" }}>
+                  {(formData.achievements || []).map((a, idx) => (
+                    <ListItem key={idx} divider>
+                      <ListItemText
+                        primary={a.title}
+                        secondary={`${a.description} ${a.badge_url ? `| Badge: ${a.badge_url}` : ""}`}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton edge="end" color="error" onClick={() => removeAchievement(idx)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+
+              {/* Documents */}
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                  Documents
+                </Typography>
               </Grid>
 
               <Grid size={12}>
-                <Typography variant="h6" sx={{ mt: 3 }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid size={4}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Doc Name"
+                      value={documentInput.name}
+                      onChange={(e) => setDocumentInput({ ...documentInput, name: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={4}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Doc URL"
+                      value={documentInput.url}
+                      onChange={(e) => setDocumentInput({ ...documentInput, url: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Doc Type (pdf/png)"
+                      value={documentInput.type}
+                      onChange={(e) => setDocumentInput({ ...documentInput, type: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={1}>
+                    <Button
+                      variant="outlined"
+                      onClick={addDocument}
+                      fullWidth
+                      sx={{ py: 1 }}
+                    >
+                      <AddIcon />
+                    </Button>
+                  </Grid>
+                </Grid>
+
+                <List dense sx={{ mt: 1, maxHeight: 150, overflow: "auto" }}>
+                  {(formData.documents || []).map((d, idx) => (
+                    <ListItem key={idx} divider>
+                      <ListItemText
+                        primary={d.name}
+                        secondary={`Type: ${d.type} | URL: ${d.url}`}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton edge="end" color="error" onClick={() => removeDocument(idx)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mt: 2 }}>
                   Settings
                 </Typography>
               </Grid>

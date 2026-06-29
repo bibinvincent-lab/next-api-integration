@@ -3,6 +3,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import {
   Box,
   Container,
   Typography,
@@ -19,6 +28,16 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function CertificatesPage() {
+  const [deleteDialog, setDeleteDialog] = useState({
+  open: false,
+  id: null,
+});
+
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: "",
+  severity: "success",
+});
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -45,12 +64,6 @@ export default function CertificatesPage() {
     }
   }
 async function deleteCertificate(id) {
-  const confirmed = window.confirm(
-    "Are you sure you want to delete this certificate?"
-  );
-
-  if (!confirmed) return;
-
   try {
     const res = await fetch(
       `/api/certificates/${id}/delete`,
@@ -67,10 +80,20 @@ async function deleteCertificate(id) {
       prev.filter((item) => item.id !== id)
     );
 
-    alert("Certificate deleted successfully");
+    setSnackbar({
+      open: true,
+      message: "Certificate deleted successfully",
+      severity: "success",
+    });
   } catch (error) {
     console.error(error);
-    alert("Delete failed");
+    setSnackbar({
+      open: true,
+      message: "Delete failed: " + error.message,
+      severity: "error",
+    });
+  } finally {
+    setDeleteDialog({ open: false, id: null });
   }
 }
   const filteredRows = certificates.filter((item) =>
@@ -172,8 +195,11 @@ async function deleteCertificate(id) {
         variant="contained"
         startIcon={<DeleteIcon />}
         onClick={() =>
-          deleteCertificate(params.row.id)
-        }
+  setDeleteDialog({
+    open: true,
+    id: params.row.id,
+  })
+}
       >
         Delete
       </Button>
@@ -242,6 +268,49 @@ async function deleteCertificate(id) {
           )}
         </CardContent>
       </Card>
+      
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null })}
+      >
+        <DialogTitle>Delete Certificate</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to permanently delete certificate #{deleteDialog.id}? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, id: null })}>
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => deleteCertificate(deleteDialog.id)}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
