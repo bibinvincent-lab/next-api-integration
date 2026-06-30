@@ -82,8 +82,8 @@ const DEFAULT_STATE = {
   achievements: [],
   documents: [],
 
-  metadata: [{ key: "", value: "" }],
-  custom_fields: [{ key: "", value: "" }],
+  metadata: [],
+  custom_fields: [],
 
   settings: {
     show_score: true,
@@ -187,6 +187,7 @@ export default function Home() {
   const [notification, setNotification] = useState({ open: false, message: "", severity: "success" });
   const [categoryInput, setCategoryInput] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [interestInput, setInterestInput] = useState("");
   const isValidPhone = (phone) => {
     const re = /^\+?[1-9]\d{7,14}$/;
     return re.test(phone);
@@ -265,6 +266,38 @@ export default function Home() {
       },
     }));
   };
+const addInterest = () => {
+  if (!interestInput.trim()) {
+    showNotification("Interest is required", "warning");
+    return;
+  }
+
+  if (formState.student.interests.includes(interestInput.trim())) {
+    showNotification("Interest already added", "warning");
+    return;
+  }
+
+  setFormState(prev => ({
+    ...prev,
+    student: {
+      ...prev.student,
+      interests: [...prev.student.interests, interestInput.trim()]
+    }
+  }));
+
+  setInterestInput("");
+};
+
+const removeInterest = (index) => {
+  setFormState(prev => ({
+    ...prev,
+    student: {
+      ...prev.student,
+      interests: prev.student.interests.filter((_, i) => i !== index)
+    }
+  }));
+};
+
 
   const handleLoadSample = () => {
     setFormState(JSON.parse(JSON.stringify(SAMPLE_CERTIFICATE)));
@@ -286,12 +319,34 @@ export default function Home() {
     });
   };
 
+  // const addKeyValueRow = (type) => {
+  //   setFormState((prev) => ({
+  //     ...prev,
+  //     [type]: [...prev[type], { key: "", value: "" }]
+  //   }));
+  // };
+
   const addKeyValueRow = (type) => {
-    setFormState((prev) => ({
-      ...prev,
-      [type]: [...prev[type], { key: "", value: "" }]
-    }));
-  };
+  const rows = formState[type];
+
+  // Don't allow adding another row if an existing one is incomplete
+  const hasIncompleteRow = rows.some(
+    (row) => !row.key.trim() || !row.value.trim()
+  );
+
+  if (hasIncompleteRow) {
+    showNotification(
+      `Please complete the existing ${type === "metadata" ? "metadata" : "custom field"} before adding another row.`,
+      "warning"
+    );
+    return;
+  }
+
+  setFormState((prev) => ({
+    ...prev,
+    [type]: [...prev[type], { key: "", value: "" }],
+  }));
+};
 
   const removeKeyValueRow = (type, index) => {
     setFormState((prev) => ({
@@ -454,13 +509,14 @@ export default function Home() {
       showNotification("Student Name is required.", "warning");
       return false;
     }
-    if (formState.skills.length === 0) {
-      showNotification(
-        "At least one skill is required.",
+if (formState.student.interests.length === 0) {
+    showNotification(
+        "At least one interest is required.",
         "warning"
-      );
-      return false;
-    }
+    );
+    return false;
+}
+
     if (!isValidPhone(formState.student.phone)) {
       showNotification(
         "Please enter a valid phone number.",
@@ -629,6 +685,27 @@ export default function Home() {
         );
         return false;
       }
+      // Validate Metadata
+for (const item of formState.metadata) {
+  if (!item.key.trim() || !item.value.trim()) {
+    showNotification(
+      "Every metadata entry must have both Key and Value.",
+      "warning"
+    );
+    return false;
+  }
+}
+
+// Validate Custom Fields
+for (const item of formState.custom_fields) {
+  if (!item.key.trim() || !item.value.trim()) {
+    showNotification(
+      "Every custom field must have both Key and Value.",
+      "warning"
+    );
+    return false;
+  }
+}
     }
 
     return true;
@@ -726,10 +803,6 @@ export default function Home() {
       }
     }
 
-    // Ensure interests is always a non-empty array (Go binding:"required")
-    const studentInterests = Array.isArray(formState.student.interests) && formState.student.interests.length > 0
-      ? formState.student.interests
-      : ["General"];
 
     // Ensure tags/categories/skills are non-empty arrays (Go binding:"required")
     const tags = formState.tags;
@@ -808,7 +881,7 @@ export default function Home() {
         phone: formState.student.phone || "+0-000-0000",
         country: formState.student.country || "N/A",
         city: formState.student.city || "N/A",
-        interests: studentInterests,
+        interests: formState.student.interests || [],
       },
       issuer: {
         id: Math.floor(Math.random() * 900000) + 100,
@@ -898,7 +971,7 @@ export default function Home() {
 
   return (
     <>
-      <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg, #0a0a14 0%, #121226 100%)", py: 4 }}>
+      <Box sx={{ minHeight: "100vh", py: 4 }}>
         <Container maxWidth="xl">
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
             <Box>
@@ -993,40 +1066,41 @@ export default function Home() {
                         <TextField label="City" fullWidth value={formState.student.city} onChange={(e) => handleNestedChange("student", "city", e.target.value)} required />
                       </Grid>
 
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 8 }}>
-                          <TextField
-                            label="Skill"
-                            fullWidth
-                            value={skillInput}
-                            onChange={(e) => setSkillInput(e.target.value)} required
-                          />
-                        </Grid>
+<Grid container spacing={2}>
+  <Grid size={{ xs: 12, sm: 8 }}>
+    <TextField
+      label="Interest"
+      fullWidth
+      value={interestInput}
+      onChange={(e) => setInterestInput(e.target.value)}
+      required
+    />
+  </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                          <Button
-                            variant="outlined"
-                            fullWidth
-                            startIcon={<AddIcon />}
-                            onClick={addSkill}
-                          >
-                            Add Skill
-                          </Button>
-                        </Grid>
+  <Grid size={{ xs: 12, sm: 4 }}>
+    <Button
+      variant="outlined"
+      fullWidth
+      startIcon={<AddIcon />}
+      onClick={addInterest}
+    >
+      Add Interest
+    </Button>
+  </Grid>
 
-                        <Grid size={12}>
-                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                            {formState.skills.map((skill, index) => (
-                              <Chip
-                                key={index}
-                                label={skill}
-                                color="success"
-                                onDelete={() => removeSkill(index)}
-                              />
-                            ))}
-                          </Box>
-                        </Grid>
-                      </Grid>
+  <Grid size={12}>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      {formState.student.interests.map((interest, index) => (
+        <Chip
+          key={index}
+          label={interest}
+          color="primary"
+          onDelete={() => removeInterest(index)}
+        />
+      ))}
+    </Box>
+  </Grid>
+</Grid>
                     </Grid>
                   )}
 
@@ -1145,9 +1219,15 @@ export default function Home() {
 
                       <Grid size={12}>
                         <Card variant="outlined" sx={{ p: 2 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Skills
-                          </Typography>
+<Typography variant="h6" gutterBottom>
+  Interests
+</Typography>
+
+<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+  {formState.student.interests.map((item, idx) => (
+    <Chip key={idx} label={item} />
+  ))}
+</Box>
 
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 9 }}>

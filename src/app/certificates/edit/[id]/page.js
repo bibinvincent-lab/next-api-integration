@@ -10,6 +10,7 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import {
   Container,
   Card,
@@ -40,6 +41,12 @@ export default function EditCertificatePage() {
   const [achievementInput, setAchievementInput] = useState({ title: "", description: "", badge_url: "" });
   const [documentInput, setDocumentInput] = useState({ name: "", type: "", url: "" });
   const [loading, setLoading] = useState(true);
+  const [interestInput, setInterestInput] = useState("");
+  const [metadataRows, setMetadataRows] = useState([]);
+  const [editingModuleIndex, setEditingModuleIndex] = useState(null);
+  const [editingAchievementIndex, setEditingAchievementIndex] = useState(null);
+  const [editingDocumentIndex, setEditingDocumentIndex] = useState(null);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -112,6 +119,13 @@ export default function EditCertificatePage() {
         ...prev,
         ...data,
       }));
+
+      setMetadataRows(
+        Object.entries(data.metadata || {}).map(([key, value]) => ({
+          key,
+          value,
+        }))
+      );
     } catch (error) {
       console.error(error);
       setSnackbar({
@@ -123,6 +137,49 @@ export default function EditCertificatePage() {
       setLoading(false);
     }
   }
+
+  const handleMetadataChange = (index, field, value) => {
+    setMetadataRows((prev) => {
+      const rows = [...prev];
+      rows[index] = {
+        ...rows[index],
+        [field]: value,
+      };
+      return rows;
+    });
+  };
+
+  const addMetadataRow = () => {
+    const hasIncomplete = metadataRows.some(
+      (item) => !item.key.trim() || !item.value.trim()
+    );
+
+    if (hasIncomplete) {
+      setSnackbar({
+        open: true,
+        severity: "warning",
+        message:
+          "Please complete the existing metadata before adding another row.",
+      });
+      return;
+    }
+
+    setMetadataRows((prev) => [
+      ...prev,
+      {
+        key: "",
+        value: "",
+      },
+    ]);
+  };
+
+  const removeMetadataRow = (index) => {
+    setMetadataRows((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+  };
+
+
   const addItemToArray = (field, value, setter) => {
     if (!value.trim()) {
       setSnackbar({
@@ -160,24 +217,124 @@ export default function EditCertificatePage() {
     }));
   };
 
-  const addModule = () => {
-    if (!moduleInput.name.trim()) {
-      setSnackbar({ open: true, message: "Module name is required", severity: "warning" });
+  const addInterest = () => {
+    if (!interestInput.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Interest is required",
+        severity: "warning",
+      });
       return;
     }
-    const scoreVal = Number(moduleInput.score) || 0;
-    const maxVal = Number(moduleInput.max_score) || 100;
-    const newModule = {
-      name: moduleInput.name.trim(),
-      score: scoreVal,
-      max_score: maxVal,
-      passed: moduleInput.passed,
-    };
+
+    if (
+      (formData.student?.interests || []).includes(interestInput.trim())
+    ) {
+      setSnackbar({
+        open: true,
+        message: "Interest already added",
+        severity: "warning",
+      });
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
-      modules: [...(prev.modules || []), newModule],
+      student: {
+        ...prev.student,
+        interests: [
+          ...(prev.student?.interests || []),
+          interestInput.trim(),
+        ],
+      },
     }));
-    setModuleInput({ name: "", score: "", max_score: "", passed: true });
+
+    setInterestInput("");
+  };
+
+  const removeInterest = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        interests: prev.student.interests.filter((_, i) => i !== index),
+      },
+    }));
+  };
+
+  // const addModule = () => {
+  //   if (!moduleInput.name.trim()) {
+  //     setSnackbar({ open: true, message: "Module name is required", severity: "warning" });
+  //     return;
+  //   }
+  //   const scoreVal = Number(moduleInput.score) || 0;
+  //   const maxVal = Number(moduleInput.max_score) || 100;
+  //   const newModule = {
+  //     name: moduleInput.name.trim(),
+  //     score: scoreVal,
+  //     max_score: maxVal,
+  //     passed: moduleInput.passed,
+  //   };
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     modules: [...(prev.modules || []), newModule],
+  //   }));
+  //   setModuleInput({ name: "", score: "", max_score: "", passed: true });
+  // };
+
+  const addModule = () => {
+    if (!moduleInput.name.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Module name is required",
+        severity: "warning",
+      });
+      return;
+    }
+
+    const newModule = {
+      name: moduleInput.name.trim(),
+      score: Number(moduleInput.score) || 0,
+      max_score: Number(moduleInput.max_score) || 100,
+      passed: moduleInput.passed,
+    };
+
+    setFormData((prev) => {
+      const modules = [...(prev.modules || [])];
+
+      if (editingModuleIndex !== null) {
+        modules[editingModuleIndex] = newModule;
+      } else {
+        modules.push(newModule);
+      }
+
+      return {
+        ...prev,
+        modules,
+      };
+    });
+
+    setModuleInput({
+      name: "",
+      score: "",
+      max_score: "",
+      passed: true,
+    });
+
+    setEditingModuleIndex(null);
+  };
+
+  const editModule = (index) => {
+    const module = formData.modules[index];
+
+    setModuleInput({
+      name: module.name,
+      score: module.score,
+      max_score: module.max_score,
+      passed: module.passed,
+    });
+
+    setEditingModuleIndex(index);
   };
 
   const removeModule = (index) => {
@@ -187,22 +344,75 @@ export default function EditCertificatePage() {
     }));
   };
 
+  // const addAchievement = () => {
+  //   if (!achievementInput.title.trim()) {
+  //     setSnackbar({ open: true, message: "Achievement title is required", severity: "warning" });
+  //     return;
+  //   }
+  //   const newAchievement = {
+  //     title: achievementInput.title.trim(),
+  //     description: achievementInput.description.trim(),
+  //     badge_url: achievementInput.badge_url.trim(),
+  //   };
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     achievements: [...(prev.achievements || []), newAchievement],
+  //   }));
+  //   setAchievementInput({ title: "", description: "", badge_url: "" });
+  // };
+
   const addAchievement = () => {
     if (!achievementInput.title.trim()) {
-      setSnackbar({ open: true, message: "Achievement title is required", severity: "warning" });
+      setSnackbar({
+        open: true,
+        message: "Achievement title is required",
+        severity: "warning",
+      });
       return;
     }
+
     const newAchievement = {
       title: achievementInput.title.trim(),
       description: achievementInput.description.trim(),
       badge_url: achievementInput.badge_url.trim(),
     };
-    setFormData((prev) => ({
-      ...prev,
-      achievements: [...(prev.achievements || []), newAchievement],
-    }));
-    setAchievementInput({ title: "", description: "", badge_url: "" });
+
+    setFormData((prev) => {
+      const achievements = [...(prev.achievements || [])];
+
+      if (editingAchievementIndex !== null) {
+        achievements[editingAchievementIndex] = newAchievement;
+      } else {
+        achievements.push(newAchievement);
+      }
+
+      return {
+        ...prev,
+        achievements,
+      };
+    });
+
+    setAchievementInput({
+      title: "",
+      description: "",
+      badge_url: "",
+    });
+
+    setEditingAchievementIndex(null);
   };
+
+  const editAchievement = (index) => {
+    const achievement = formData.achievements[index];
+
+    setAchievementInput({
+      title: achievement.title,
+      description: achievement.description,
+      badge_url: achievement.badge_url,
+    });
+
+    setEditingAchievementIndex(index);
+  };
+
 
   const removeAchievement = (index) => {
     setFormData((prev) => ({
@@ -211,23 +421,75 @@ export default function EditCertificatePage() {
     }));
   };
 
+  // const addDocument = () => {
+  //   if (!documentInput.name.trim() || !documentInput.url.trim()) {
+  //     setSnackbar({ open: true, message: "Document name and URL are required", severity: "warning" });
+  //     return;
+  //   }
+  //   const newDocument = {
+  //     name: documentInput.name.trim(),
+  //     url: documentInput.url.trim(),
+  //     type: documentInput.type.trim() || "pdf",
+  //   };
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     documents: [...(prev.documents || []), newDocument],
+  //   }));
+  //   setDocumentInput({ name: "", type: "", url: "" });
+  // };
   const addDocument = () => {
     if (!documentInput.name.trim() || !documentInput.url.trim()) {
-      setSnackbar({ open: true, message: "Document name and URL are required", severity: "warning" });
+      setSnackbar({
+        open: true,
+        message: "Document name and URL are required",
+        severity: "warning",
+      });
       return;
     }
+
     const newDocument = {
       name: documentInput.name.trim(),
       url: documentInput.url.trim(),
       type: documentInput.type.trim() || "pdf",
     };
-    setFormData((prev) => ({
-      ...prev,
-      documents: [...(prev.documents || []), newDocument],
-    }));
-    setDocumentInput({ name: "", type: "", url: "" });
+
+
+
+    setFormData((prev) => {
+      const documents = [...(prev.documents || [])];
+
+      if (editingDocumentIndex !== null) {
+        documents[editingDocumentIndex] = newDocument;
+      } else {
+        documents.push(newDocument);
+      }
+
+      return {
+        ...prev,
+        documents,
+      };
+    });
+
+    setDocumentInput({
+      name: "",
+      url: "",
+      type: "",
+    });
+
+    setEditingDocumentIndex(null);
   };
 
+  const editDocument = (index) => {
+    const document = formData.documents[index];
+
+    setDocumentInput({
+      name: document.name,
+      url: document.url,
+      type: document.type,
+    });
+
+    setEditingDocumentIndex(index);
+  };
   const removeDocument = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -241,8 +503,18 @@ export default function EditCertificatePage() {
     setSaving(true);
 
     try {
+      const metadataObject = {};
+
+      metadataRows.forEach((item) => {
+        if (item.key.trim()) {
+          metadataObject[item.key.trim()] =
+            item.value.trim();
+        }
+      });
       const payload = {
         ...formData,
+
+        metadata: metadataObject,
         id: Number(id),
         score: Number(formData.score),
         percentage: Number(formData.percentage),
@@ -622,6 +894,56 @@ export default function EditCertificatePage() {
               </Grid>
 
               <Grid size={12}>
+                <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+                  Interests
+                </Typography>
+              </Grid>
+
+              <Grid size={12}>
+                <Grid container spacing={2}>
+                  <Grid size={9}>
+                    <TextField
+                      fullWidth
+                      label="Interest"
+                      value={interestInput}
+                      onChange={(e) => setInterestInput(e.target.value)}
+                    />
+                  </Grid>
+
+                  <Grid size={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={addInterest}
+                    >
+                      Add
+                    </Button>
+                  </Grid>
+
+                  <Grid size={12}>
+                    <Box
+                      sx={{
+                        mt: 2,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1,
+                      }}
+                    >
+                      {(formData.student?.interests || []).map((interest, index) => (
+                        <Chip
+                          key={index}
+                          label={interest}
+                          color="primary"
+                          onDelete={() => removeInterest(index)}
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              <Grid size={12}>
                 <Typography variant="h6" sx={{ mt: 2 }}>
                   Issuer Details
                 </Typography>
@@ -715,44 +1037,44 @@ export default function EditCertificatePage() {
               </Grid> */}
 
               <Grid size={12}>
-  <Grid container spacing={2}>
-    <Grid size={9}>
-      <TextField
-        fullWidth
-        label="Skill"
-        value={skillInput}
-        onChange={(e) => setSkillInput(e.target.value)}
-      />
-    </Grid>
+                <Grid container spacing={2}>
+                  <Grid size={9}>
+                    <TextField
+                      fullWidth
+                      label="Skill"
+                      value={skillInput}
+                      onChange={(e) => setSkillInput(e.target.value)}
+                    />
+                  </Grid>
 
-    <Grid size={3}>
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={<AddIcon />}
-        onClick={() =>
-          addItemToArray("skills", skillInput, setSkillInput)
-        }
-      >
-        Add
-      </Button>
-    </Grid>
+                  <Grid size={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() =>
+                        addItemToArray("skills", skillInput, setSkillInput)
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Grid>
 
-    <Grid size={12}>
-      <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-        {formData.skills.map((skill, index) => (
-          <Chip
-            key={index}
-            label={skill}
-            onDelete={() =>
-              removeItemFromArray("skills", index)
-            }
-          />
-        ))}
-      </Box>
-    </Grid>
-  </Grid>
-</Grid>
+                  <Grid size={12}>
+                    <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {formData.skills.map((skill, index) => (
+                        <Chip
+                          key={index}
+                          label={skill}
+                          onDelete={() =>
+                            removeItemFromArray("skills", index)
+                          }
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
 
               {/* <Grid size={12}>
                 
@@ -786,52 +1108,52 @@ export default function EditCertificatePage() {
                 </Box>
               </Grid> */}
               <Grid size={12}>
-  <Grid container spacing={2}>
-    <Grid size={9}>
-      <TextField
-        fullWidth
-        label="Category"
-        value={categoryInput}
-        onChange={(e) => setCategoryInput(e.target.value)}
-      />
-    </Grid>
+                <Grid container spacing={2}>
+                  <Grid size={9}>
+                    <TextField
+                      fullWidth
+                      label="Category"
+                      value={categoryInput}
+                      onChange={(e) => setCategoryInput(e.target.value)}
+                    />
+                  </Grid>
 
-    <Grid size={3}>
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={<AddIcon />}
-        onClick={() =>
-          addItemToArray("categories", categoryInput, setCategoryInput)
-        }
-      >
-        Add
-      </Button>
-    </Grid>
+                  <Grid size={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() =>
+                        addItemToArray("categories", categoryInput, setCategoryInput)
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Grid>
 
-    <Grid size={12}>
-      <Box
-        sx={{
-          mt: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1,
-        }}
-      >
-        {formData.categories.map((category, index) => (
-          <Chip
-            key={index}
-            label={category}
-            color="secondary"
-            onDelete={() =>
-              removeItemFromArray("categories", index)
-            }
-          />
-        ))}
-      </Box>
-    </Grid>
-  </Grid>
-</Grid>
+                  <Grid size={12}>
+                    <Box
+                      sx={{
+                        mt: 2,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1,
+                      }}
+                    >
+                      {formData.categories.map((category, index) => (
+                        <Chip
+                          key={index}
+                          label={category}
+                          color="secondary"
+                          onDelete={() =>
+                            removeItemFromArray("categories", index)
+                          }
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
 
               <Grid size={12}>
                 <Grid container spacing={2}>
@@ -938,7 +1260,7 @@ export default function EditCertificatePage() {
                       fullWidth
                       sx={{ py: 1 }}
                     >
-                      <AddIcon />
+                      {editingModuleIndex !== null ? "Save" : <AddIcon />}
                     </Button>
                   </Grid>
                 </Grid>
@@ -950,10 +1272,39 @@ export default function EditCertificatePage() {
                         primary={m.name}
                         secondary={`Score: ${m.score}/${m.max_score} | Passed: ${m.passed ? "Yes" : "No"}`}
                       />
-                      <ListItemSecondaryAction>
+                      {/* <ListItemSecondaryAction>
                         <IconButton edge="end" color="error" onClick={() => removeModule(idx)}>
                           <DeleteIcon />
                         </IconButton>
+                      </ListItemSecondaryAction> */}
+
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          color="error"
+                          onClick={() => removeModule(idx)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                      <ListItemSecondaryAction>
+
+                        <IconButton
+                          edge="end"
+                          color="primary"
+                          onClick={() => editModule(idx)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+
+                        <IconButton
+                          edge="end"
+                          color="error"
+                          onClick={() => removeModule(idx)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+
                       </ListItemSecondaryAction>
                     </ListItem>
                   ))}
@@ -1004,7 +1355,7 @@ export default function EditCertificatePage() {
                       fullWidth
                       sx={{ py: 1 }}
                     >
-                      <AddIcon />
+                      {editingAchievementIndex !== null ? "Save" : <AddIcon />}
                     </Button>
                   </Grid>
                 </Grid>
@@ -1016,10 +1367,29 @@ export default function EditCertificatePage() {
                         primary={a.title}
                         secondary={`${a.description} ${a.badge_url ? `| Badge: ${a.badge_url}` : ""}`}
                       />
-                      <ListItemSecondaryAction>
+                      {/* <ListItemSecondaryAction>
                         <IconButton edge="end" color="error" onClick={() => removeAchievement(idx)}>
                           <DeleteIcon />
                         </IconButton>
+                      </ListItemSecondaryAction> */}
+                      <ListItemSecondaryAction>
+
+                        <IconButton
+                          edge="end"
+                          color="primary"
+                          onClick={() => editAchievement(idx)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+
+                        <IconButton
+                          edge="end"
+                          color="error"
+                          onClick={() => removeAchievement(idx)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+
                       </ListItemSecondaryAction>
                     </ListItem>
                   ))}
@@ -1070,9 +1440,10 @@ export default function EditCertificatePage() {
                       fullWidth
                       sx={{ py: 1 }}
                     >
-                      <AddIcon />
+                      {editingDocumentIndex !== null ? "Save" : <AddIcon />}
                     </Button>
                   </Grid>
+
                 </Grid>
 
                 <List dense sx={{ mt: 1, maxHeight: 150, overflow: "auto" }}>
@@ -1082,14 +1453,94 @@ export default function EditCertificatePage() {
                         primary={d.name}
                         secondary={`Type: ${d.type} | URL: ${d.url}`}
                       />
-                      <ListItemSecondaryAction>
+                      {/* <ListItemSecondaryAction>
                         <IconButton edge="end" color="error" onClick={() => removeDocument(idx)}>
                           <DeleteIcon />
                         </IconButton>
+                      </ListItemSecondaryAction> */}
+                      <ListItemSecondaryAction>
+
+                        <IconButton
+                          edge="end"
+                          color="primary"
+                          onClick={() => editDocument(idx)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+
+                        <IconButton
+                          edge="end"
+                          color="error"
+                          onClick={() => removeDocument(idx)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+
                       </ListItemSecondaryAction>
                     </ListItem>
                   ))}
                 </List>
+              </Grid>
+
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Metadata (Key : Value)
+                </Typography>
+
+                {metadataRows.map((item, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <TextField
+                      size="small"
+                      label="Key"
+                      value={item.key}
+                      onChange={(e) =>
+                        handleMetadataChange(
+                          index,
+                          "key",
+                          e.target.value
+                        )
+                      }
+                    />
+
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Value"
+                      value={item.value}
+                      onChange={(e) =>
+                        handleMetadataChange(
+                          index,
+                          "value",
+                          e.target.value
+                        )
+                      }
+                    />
+
+                    <IconButton
+                      color="error"
+                      onClick={() => removeMetadataRow(index)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                ))}
+
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="outlined"
+                  onClick={addMetadataRow}
+                >
+                  Add Row
+                </Button>
               </Grid>
 
               <Grid size={12}>

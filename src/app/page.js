@@ -12,7 +12,6 @@ export default function HomePage() {
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
-        background: "linear-gradient(135deg, #0a0a14 0%, #121226 100%)",
       }}
     >
       <Container maxWidth="md" sx={{ textAlign: "center", py: 8 }}>
