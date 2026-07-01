@@ -266,37 +266,37 @@ export default function Home() {
       },
     }));
   };
-const addInterest = () => {
-  if (!interestInput.trim()) {
-    showNotification("Interest is required", "warning");
-    return;
-  }
-
-  if (formState.student.interests.includes(interestInput.trim())) {
-    showNotification("Interest already added", "warning");
-    return;
-  }
-
-  setFormState(prev => ({
-    ...prev,
-    student: {
-      ...prev.student,
-      interests: [...prev.student.interests, interestInput.trim()]
+  const addInterest = () => {
+    if (!interestInput.trim()) {
+      showNotification("Interest is required", "warning");
+      return;
     }
-  }));
 
-  setInterestInput("");
-};
-
-const removeInterest = (index) => {
-  setFormState(prev => ({
-    ...prev,
-    student: {
-      ...prev.student,
-      interests: prev.student.interests.filter((_, i) => i !== index)
+    if (formState.student.interests.includes(interestInput.trim())) {
+      showNotification("Interest already added", "warning");
+      return;
     }
-  }));
-};
+
+    setFormState(prev => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        interests: [...prev.student.interests, interestInput.trim()]
+      }
+    }));
+
+    setInterestInput("");
+  };
+
+  const removeInterest = (index) => {
+    setFormState(prev => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        interests: prev.student.interests.filter((_, i) => i !== index)
+      }
+    }));
+  };
 
 
   const handleLoadSample = () => {
@@ -327,26 +327,26 @@ const removeInterest = (index) => {
   // };
 
   const addKeyValueRow = (type) => {
-  const rows = formState[type];
+    const rows = formState[type];
 
-  // Don't allow adding another row if an existing one is incomplete
-  const hasIncompleteRow = rows.some(
-    (row) => !row.key.trim() || !row.value.trim()
-  );
-
-  if (hasIncompleteRow) {
-    showNotification(
-      `Please complete the existing ${type === "metadata" ? "metadata" : "custom field"} before adding another row.`,
-      "warning"
+    // Don't allow adding another row if an existing one is incomplete
+    const hasIncompleteRow = rows.some(
+      (row) => !row.key.trim() || !row.value.trim()
     );
-    return;
-  }
 
-  setFormState((prev) => ({
-    ...prev,
-    [type]: [...prev[type], { key: "", value: "" }],
-  }));
-};
+    if (hasIncompleteRow) {
+      showNotification(
+        `Please complete the existing ${type === "metadata" ? "metadata" : "custom field"} before adding another row.`,
+        "warning"
+      );
+      return;
+    }
+
+    setFormState((prev) => ({
+      ...prev,
+      [type]: [...prev[type], { key: "", value: "" }],
+    }));
+  };
 
   const removeKeyValueRow = (type, index) => {
     setFormState((prev) => ({
@@ -509,21 +509,15 @@ const removeInterest = (index) => {
       showNotification("Student Name is required.", "warning");
       return false;
     }
-if (formState.student.interests.length === 0) {
-    showNotification(
-        "At least one interest is required.",
-        "warning"
-    );
-    return false;
-}
-
-    if (!isValidPhone(formState.student.phone)) {
+    if (formState.student.interests.length === 0) {
       showNotification(
-        "Please enter a valid phone number.",
+        "At least one interest is required.",
         "warning"
       );
       return false;
     }
+
+
     if (!formState.student.email.trim()) {
       showNotification("Student Email is required.", "warning");
       return false;
@@ -538,7 +532,13 @@ if (formState.student.interests.length === 0) {
       showNotification("Student Phone is required.", "warning");
       return false;
     }
-
+    if (!isValidPhone(formState.student.phone)) {
+      showNotification(
+        "Please enter a valid phone number.",
+        "warning"
+      );
+      return false;
+    }
     if (!formState.student.country.trim()) {
       showNotification("Country is required.", "warning");
       return false;
@@ -686,26 +686,26 @@ if (formState.student.interests.length === 0) {
         return false;
       }
       // Validate Metadata
-for (const item of formState.metadata) {
-  if (!item.key.trim() || !item.value.trim()) {
-    showNotification(
-      "Every metadata entry must have both Key and Value.",
-      "warning"
-    );
-    return false;
-  }
-}
+      for (const item of formState.metadata) {
+        if (!item.key.trim() || !item.value.trim()) {
+          showNotification(
+            "Every metadata entry must have both Key and Value.",
+            "warning"
+          );
+          return false;
+        }
+      }
 
-// Validate Custom Fields
-for (const item of formState.custom_fields) {
-  if (!item.key.trim() || !item.value.trim()) {
-    showNotification(
-      "Every custom field must have both Key and Value.",
-      "warning"
-    );
-    return false;
-  }
-}
+      // Validate Custom Fields
+      for (const item of formState.custom_fields) {
+        if (!item.key.trim() || !item.value.trim()) {
+          showNotification(
+            "Every custom field must have both Key and Value.",
+            "warning"
+          );
+          return false;
+        }
+      }
     }
 
     return true;
@@ -1066,41 +1066,41 @@ for (const item of formState.custom_fields) {
                         <TextField label="City" fullWidth value={formState.student.city} onChange={(e) => handleNestedChange("student", "city", e.target.value)} required />
                       </Grid>
 
-<Grid container spacing={2}>
-  <Grid size={{ xs: 12, sm: 8 }}>
-    <TextField
-      label="Interest"
-      fullWidth
-      value={interestInput}
-      onChange={(e) => setInterestInput(e.target.value)}
-      required
-    />
-  </Grid>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 8 }}>
+                          <TextField
+                            label="Interest"
+                            fullWidth
+                            value={interestInput}
+                            onChange={(e) => setInterestInput(e.target.value)}
+                            required
+                          />
+                        </Grid>
 
-  <Grid size={{ xs: 12, sm: 4 }}>
-    <Button
-      variant="outlined"
-      fullWidth
-      startIcon={<AddIcon />}
-      onClick={addInterest}
-    >
-      Add Interest
-    </Button>
-  </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <Button
+                            variant="outlined"
+                            fullWidth
+                            startIcon={<AddIcon />}
+                            onClick={addInterest}
+                          >
+                            Add Interest
+                          </Button>
+                        </Grid>
 
-  <Grid size={12}>
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-      {formState.student.interests.map((interest, index) => (
-        <Chip
-          key={index}
-          label={interest}
-          color="primary"
-          onDelete={() => removeInterest(index)}
-        />
-      ))}
-    </Box>
-  </Grid>
-</Grid>
+                        <Grid size={12}>
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                            {formState.student.interests.map((interest, index) => (
+                              <Chip
+                                key={index}
+                                label={interest}
+                                color="primary"
+                                onDelete={() => removeInterest(index)}
+                              />
+                            ))}
+                          </Box>
+                        </Grid>
+                      </Grid>
                     </Grid>
                   )}
 
@@ -1219,15 +1219,15 @@ for (const item of formState.custom_fields) {
 
                       <Grid size={12}>
                         <Card variant="outlined" sx={{ p: 2 }}>
-<Typography variant="h6" gutterBottom>
-  Interests
-</Typography>
+                          <Typography variant="h6" gutterBottom>
+                            Interests
+                          </Typography>
 
-<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-  {formState.student.interests.map((item, idx) => (
-    <Chip key={idx} label={item} />
-  ))}
-</Box>
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                            {formState.student.interests.map((item, idx) => (
+                              <Chip key={idx} label={item} />
+                            ))}
+                          </Box>
 
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 9 }}>

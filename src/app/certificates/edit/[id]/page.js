@@ -43,6 +43,7 @@ export default function EditCertificatePage() {
   const [loading, setLoading] = useState(true);
   const [interestInput, setInterestInput] = useState("");
   const [metadataRows, setMetadataRows] = useState([]);
+  const [customFieldsRows, setCustomFieldsRows] = useState([]);
   const [editingModuleIndex, setEditingModuleIndex] = useState(null);
   const [editingAchievementIndex, setEditingAchievementIndex] = useState(null);
   const [editingDocumentIndex, setEditingDocumentIndex] = useState(null);
@@ -126,6 +127,14 @@ export default function EditCertificatePage() {
           value,
         }))
       );
+
+setCustomFieldsRows(
+  Object.entries(data.custom_fields || {}).map(([key, value]) => ({
+    key: String(key),
+    value: value == null ? "" : String(value),
+  }))
+);
+
     } catch (error) {
       console.error(error);
       setSnackbar({
@@ -179,6 +188,52 @@ export default function EditCertificatePage() {
     );
   };
 
+
+
+
+    const handleCustomFieldsChange = (index, field, value) => {
+    setCustomFieldsRows((prev) => {
+      const rows = [...prev];
+      rows[index] = {
+        ...rows[index],
+        [field]: value,
+      };
+      return rows;
+    });
+  };
+
+  const addCustomFieldRow = () => {
+const hasIncomplete = customFieldsRows.some(
+  (item) =>
+    !String(item.key ?? "").trim() ||
+    !String(item.value ?? "").trim()
+);
+
+    if (hasIncomplete) {
+      setSnackbar({
+        open: true,
+        severity: "warning",
+        message:
+          "Please complete the existing custom fields before adding another row.",
+      });
+      return;
+    }
+
+    setCustomFieldsRows((prev) => [
+      ...prev,
+      {
+        key: "",
+        value: "",
+      },
+    ]);
+  };
+
+
+  const removeCustomFieldRow = (index) => {
+    setCustomFieldsRows((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+  };
 
   const addItemToArray = (field, value, setter) => {
     if (!value.trim()) {
@@ -504,23 +559,32 @@ export default function EditCertificatePage() {
 
     try {
       const metadataObject = {};
+metadataRows.forEach((item) => {
+  if (item.key.trim()) {
+    metadataObject[item.key.trim()] = item.value.trim();
+  }
+});
 
-      metadataRows.forEach((item) => {
-        if (item.key.trim()) {
-          metadataObject[item.key.trim()] =
-            item.value.trim();
-        }
-      });
-      const payload = {
-        ...formData,
+const customFieldsObject = {};
+customFieldsRows.forEach((item) => {
+  const key = String(item.key ?? "").trim();
+  const value = String(item.value ?? "").trim();
 
-        metadata: metadataObject,
-        id: Number(id),
-        score: Number(formData.score),
-        percentage: Number(formData.percentage),
-        rank: Number(formData.rank),
-        updated_at: new Date().toISOString(),
-      };
+  if (key && value) {
+    customFieldsObject[key] = value;
+  }
+});
+
+const payload = {
+  ...formData,
+  metadata: metadataObject,
+  custom_fields: customFieldsObject,
+  id: Number(id),
+  score: Number(formData.score),
+  percentage: Number(formData.percentage),
+  rank: Number(formData.rank),
+  updated_at: new Date().toISOString(),
+};
 
       const res = await fetch(
         `/api/certificates/${id}/update`,
@@ -1212,7 +1276,7 @@ export default function EditCertificatePage() {
               </Grid>
 
               <Grid size={12}>
-                <Grid container spacing={2} alignItems="center">
+                <Grid container spacing={2} sx={{ alignItems: 'center' }}>
                   <Grid size={5}>
                     <TextField
                       fullWidth
@@ -1320,7 +1384,7 @@ export default function EditCertificatePage() {
               </Grid>
 
               <Grid size={12}>
-                <Grid container spacing={2} alignItems="center">
+                <Grid container spacing={2} sx={{ alignItems: 'center' }}>
                   <Grid size={4}>
                     <TextField
                       fullWidth
@@ -1405,7 +1469,7 @@ export default function EditCertificatePage() {
               </Grid>
 
               <Grid size={12}>
-                <Grid container spacing={2} alignItems="center">
+                <Grid container spacing={2} sx={{ alignItems: 'center' }}>
                   <Grid size={4}>
                     <TextField
                       fullWidth
@@ -1543,6 +1607,66 @@ export default function EditCertificatePage() {
                 </Button>
               </Grid>
 
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Custom Fields (Key : Value)
+                </Typography>
+
+               {customFieldsRows.map((item, index) => (
+  <Box
+    key={index}
+    sx={{
+      display: "flex",
+      gap: 1,
+      mb: 1,
+    }}
+  >
+    <TextField
+      size="small"
+      label="Key"
+      value={item.key}
+      onChange={(e) =>
+        handleCustomFieldsChange(
+          index,
+          "key",
+          e.target.value
+        )
+      }
+    />
+
+    <TextField
+      fullWidth
+      size="small"
+      label="Value"
+      value={item.value}
+      onChange={(e) =>
+        handleCustomFieldsChange(
+          index,
+          "value",
+          e.target.value
+        )
+      }
+    />
+
+    <IconButton
+      color="error"
+      onClick={() => removeCustomFieldRow(index)}
+    >
+      <DeleteIcon />
+    </IconButton>
+  </Box>
+))}
+
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="outlined"
+                  onClick={addCustomFieldRow}
+                >
+                  Add Row
+                </Button>
+              </Grid>
               <Grid size={12}>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="h6" sx={{ mt: 2 }}>
